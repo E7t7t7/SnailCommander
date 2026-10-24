@@ -1,0 +1,22 @@
+# Build output
+**/bin/
+**/obj/
+.vs/
+.idea/
+*.user
+*.suo
+TestResults/
+
+# Local-only captures, diagnostics and secrets
+captures/
+screenshots/
+logs/
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.env
+.env.*
+*.key
+*.token
+*.pfx
