@@ -99,7 +99,15 @@ public sealed class MainForm : Form
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         Controls.Add(root);
 
-        var sidebar = new Panel { Dock = DockStyle.Fill, BackColor = Theme.Sidebar, Padding = new Padding(12) };
+        var sidebar = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill, BackColor = Theme.Sidebar,
+            Padding = new Padding(12), ColumnCount = 1, RowCount = 3
+        };
+        sidebar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        sidebar.RowStyles.Add(new RowStyle(SizeType.Absolute, 101));
+        sidebar.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        sidebar.RowStyles.Add(new RowStyle(SizeType.Absolute, 78));
         root.Controls.Add(sidebar, 0, 0);
 
         var brand = new Panel { Dock = DockStyle.Top, Height = 101 };
@@ -119,7 +127,8 @@ public sealed class MainForm : Form
         suffix.SetBounds(70, 42, 118, 24);
         suffix.Dock = DockStyle.None;
         brand.Controls.Add(suffix);
-        sidebar.Controls.Add(brand);
+        brand.Dock = DockStyle.Fill;
+        sidebar.Controls.Add(brand, 0, 0);
 
         var sidebarFooter = new Panel { Dock = DockStyle.Bottom, Height = 78 };
         var state = Theme.TextLabel("●  READ ONLY", 9, true, Theme.Accent);
@@ -130,7 +139,8 @@ public sealed class MainForm : Form
         version.Dock = DockStyle.Top;
         version.Height = 27;
         sidebarFooter.Controls.Add(version);
-        sidebar.Controls.Add(sidebarFooter);
+        sidebarFooter.Dock = DockStyle.Fill;
+        sidebar.Controls.Add(sidebarFooter, 0, 2);
 
         var navStack = new FlowLayoutPanel
         {
@@ -138,8 +148,7 @@ public sealed class MainForm : Form
             WrapContents = false, AutoScroll = false,
             BackColor = Theme.Sidebar, Padding = new Padding(0, 8, 0, 0)
         };
-        sidebar.Controls.Add(navStack);
-        navStack.BringToFront();
+        sidebar.Controls.Add(navStack, 0, 1);
         foreach (var (name, glyph) in new[]
         {
             ("Overview", "◉"), ("Captures", "▣"),
@@ -432,7 +441,8 @@ public sealed class MainForm : Form
         active.BringToFront();
         foreach (var (pageName, button) in _nav)
         {
-            button.BackColor = pageName == name ? Theme.AccentDark : Theme.Sidebar;
+            button.IdleBackColor = pageName == name ? Theme.AccentDark : Theme.Sidebar;
+            button.BackColor = button.IdleBackColor;
             button.ForeColor = pageName == name ? Theme.Accent : Theme.Secondary;
         }
         _pageTitle.Text = name switch
