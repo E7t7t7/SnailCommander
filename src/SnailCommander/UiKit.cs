@@ -115,15 +115,16 @@ internal sealed class SurfacePanel : Panel
 
 internal sealed class ModernButton : Button
 {
-    private readonly Color _normal;
-    private readonly Color _hover;
+    public Color IdleBackColor { get; set; }
+    public Color HoverBackColor { get; set; }
+
     public ModernButton(string text, bool primary = false)
     {
         Text = text;
-        _normal = primary ? Theme.Accent : Theme.Raised;
-        _hover = primary ? Color.FromArgb(110, 239, 212) : Color.FromArgb(47, 63, 83);
+        IdleBackColor = primary ? Theme.Accent : Theme.Raised;
+        HoverBackColor = primary ? Color.FromArgb(110, 239, 212) : Color.FromArgb(47, 63, 83);
         ForeColor = primary ? Theme.Background : Theme.Text;
-        BackColor = _normal;
+        BackColor = IdleBackColor;
         FlatStyle = FlatStyle.Flat;
         FlatAppearance.BorderSize = 0;
         UseVisualStyleBackColor = false;
@@ -131,7 +132,7 @@ internal sealed class ModernButton : Button
         Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
         Height = 39;
         Margin = new Padding(3);
-        MouseEnter += (_, _) => { if (Enabled) BackColor = _hover; };
-        MouseLeave += (_, _) => { BackColor = _normal; };
+        MouseEnter += (_, _) => { if (Enabled) BackColor = HoverBackColor; };
+        MouseLeave += (_, _) => { BackColor = IdleBackColor; };
     }
 }
