@@ -1,76 +1,60 @@
 # Snail Commander
 
-A local-first **Windows companion** for inspecting and planning progress in Super Snail running inside BlueStacks.
+Local-first Windows companion for observing **Super Snail** in **BlueStacks**.
 
-## v0.2.0: Read-only diagnostics + one-click GitHub updates
+## v0.3.0 — Token-free updates (public GitHub repository)
 
-- Detect HD-Adb.exe or adb.exe, connect to BlueStacks, and enumerate connected devices.
-- Save and preview screenshots in Pictures/SnailCommander/Captures.
-- Record diagnostics under %LOCALAPPDATA%/SnailCommander/Logs.
-- **Check & install update** downloads the latest successful compiled build from this **private repository**.
-- A separate updater waits until the app closes before replacing its files and restarting it.
-- Existing files are backed up under %LOCALAPPDATA%/SnailCommander/Backups.
-- GitHub access token is saved to **Windows Credential Manager**, never to plain-text configuration or log files.
+- Detect BlueStacks' ADB, connect to the emulator, list devices, and capture screenshots.
+- Dark Windows Forms diagnostic dashboard with local screenshot preview and logs.
+- **Update from GitHub** button requires **no Personal Access Token**.
+- Checks the [latest public GitHub Release](https://github.com/E7t7t7/SnailCommander/releases/latest).
+- Downloads the release ZIP, verifies its GitHub SHA-256 asset digest, and checks expected application files.
+- Launches a separate installer after the app closes, backs up replaced files, and reopens the app.
+- A button is included to delete any **legacy private-repo updater token** from Windows Credential Manager.
 
-**Not implemented:** autonomous gameplay, tapping, resource spending, local vision models, or progress reports. This version only observes the emulator.
+**This remains a read-only diagnostics tool**, not a gameplay bot. It neither taps the game nor spends resources. Autonomous gameplay would require separate discussion of reliability and Super Snail's rules.
 
-## Install v0.2.0 (one time)
+## Upgrade from v0.1 or v0.2 (one-time manual step)
 
-1. Visit [GitHub Actions](https://github.com/E7t7t7/SnailCommander/actions/workflows/windows-build.yml).
-2. Select the latest **successful** Windows build from the main branch.
-3. Under **Artifacts**, download **SnailCommander-win-x64**.
-4. Extract the ZIP into a writable folder such as Desktop/SnailCommander. Do not launch from inside the ZIP and avoid Program Files.
-5. Run **SnailCommander.exe** with BlueStacks running.
+Your previously installed application still contains the old private-repo updater, so it cannot update itself to this token-free architecture.
 
-Your existing v0.1.0 **does not contain the updater**, so v0.2.0 must be downloaded manually once. Subsequent updates can use the in-app button.
+1. Open the [Snail Commander Releases page](https://github.com/E7t7t7/SnailCommander/releases/latest).
+2. Download **SnailCommander-win-x64.zip** under **Assets**.
+3. Close the old Snail Commander application.
+4. Extract the new ZIP into your existing **writable** Snail Commander application folder, replacing existing application files.
+5. Launch **SnailCommander.exe**.
 
-## Configure the private-repo updater (once)
+**After this manual upgrade:** Click **Update from GitHub** in the application for future releases. No GitHub account, personal access token, or separate subscription is required to download public builds.
 
-1. On GitHub, open **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**.
-2. Set **Repository access → Only select repositories → SnailCommander**.
-3. Grant **Actions: Read-only** under repository permissions. No write permissions are needed.
-4. Generate the token. Do **not** share it in ChatGPT or screenshots.
-5. In Snail Commander, scroll the left panel to **GITHUB UPDATES (PRIVATE REPO)**.
-6. Paste the token into the masked field and click **Save token**.
-7. For future updates, click **Check & install update**. Confirm the prompt; the app will download, close, update, and reopen.
+If you previously generated a fine-grained Personal Access Token for the private repository, use **Remove old GitHub token** in the app to delete the locally stored credential, and [revoke the token on GitHub](https://github.com/settings/personal-access-tokens) since it is no longer needed.
 
-Use **Remove token** to delete the credential. If a token expires or is revoked, generate and save a replacement. Do not create an all-repositories token.
+## How public updates are published
 
-### How the updater works
+Pushing to `main` triggers GitHub Actions. After a successful Windows build, the workflow creates a public GitHub Release named with the full commit SHA (`build-<40-character-sha>`) and attaches the downloadable Windows ZIP.
 
-- Reads successful GitHub Actions runs from the repository's main branch.
-- Compares the current app's embedded Git commit to the latest successful workflow.
-- Downloads the matching Windows artifact through GitHub's authenticated API.
-- Checks for expected app and updater executables in the extracted archive.
-- Runs an external worker from a temporary folder to avoid Windows file-in-use locks.
-- Backs up replaced files and attempts rollback on errors.
-- Relaunches the application after installation.
+The app compares its embedded build SHA with the latest published release, verifies SHA-256 of the downloaded package, then installs using an external worker. Existing files are backed up under `%LOCALAPPDATA%\SnailCommander\Backups`. Update logs are under `%LOCALAPPDATA%\SnailCommander\Logs\updater.log`.
 
-If updates fail, review **%LOCALAPPDATA%/SnailCommander/Logs/updater.log**.
+Do not store passwords, screenshots or access tokens in this **public** repository.
 
-## BlueStacks connection
+## BlueStacks ADB setup
 
-1. BlueStacks Settings → Advanced → turn **Android Debug Bridge** ON.
-2. In Snail Commander click **Detect ADB**, then **Connect** to the port shown by BlueStacks, commonly 127.0.0.1:5555.
-3. Click **Refresh devices**, choose the matching emulator, and click **Capture screenshot**.
-4. The screenshot's actual resolution is detected independently of the size of the BlueStacks window.
+1. BlueStacks Settings → Advanced → enable Android Debug Bridge.
+2. Launch BlueStacks with Super Snail open.
+3. In Snail Commander, **Detect ADB**, enter the emulator's port (commonly `127.0.0.1:5555`), then **Connect**.
+4. **Refresh devices** and select the correct BlueStacks entry.
+5. **Capture screenshot**. The screenshot will appear in the dashboard, and the file will be saved to `Pictures\SnailCommander\Captures`.
 
-## Local development
+Your 960 × 540 BlueStacks window does not necessarily equal the Android display resolution.
 
-Requires Windows and .NET 8 SDK.
+## Development
 
-~~~powershell
-dotnet publish src/SnailCommander/SnailCommander.csproj -c Release -r win-x64 --self-contained true
-dotnet publish src/SnailCommander.Updater/SnailCommander.Updater.csproj -c Release -r win-x64 --self-contained true
-~~~
-
-GitHub Actions creates a self-contained Windows build so end users need no .NET SDK.
+- .NET 8, WinForms, self-contained Windows x64 release
+- BlueStacks bundled `HD-Adb.exe` or Android SDK `adb.exe`
+- GitHub Actions release pipeline with limited `contents: write` permission only for publishing
 
 ## Next milestones
 
-- Image recognition and OCR quality checks
-- Optional offline vision model on compatible GPUs
-- Confidence-scored progression analysis and recommendations
-- Local snapshots and weekly progress reports
-
-Super Snail's published terms restrict automated gameplay. The current app does not automate gameplay.
+- Read-only screen classification, OCR testing, and local vision-model experiments
+- Saved account observations and decision-support recommendations
+- Weekly progress comparison reports
+- Error and recovery diagnostics
