@@ -14,7 +14,6 @@ public sealed class MainForm : Form
 
     private readonly TextBox _adbPath = new();
     private readonly TextBox _endpoint = new();
-    private readonly TextBox _githubToken = new();
     private readonly ComboBox _devices = new();
     private readonly TextBox _log = new();
     private readonly PictureBox _preview = new();
@@ -32,7 +31,7 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "Snail Commander — v0.2.0";
+        Text = "Snail Commander — v0.3.0";
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(1000, 700);
         Size = new Size(1280, 810);
@@ -52,7 +51,7 @@ public sealed class MainForm : Form
         root.Controls.Add(sidebar, 0, 0);
 
         sidebar.Controls.Add(MakeLabel("SNAIL COMMANDER", 24, 25, 320, 32, 19, Foreground, true));
-        sidebar.Controls.Add(MakeLabel("Local diagnostics • GitHub updater v0.2", 24, 62, 320, 27, 10, Muted));
+        sidebar.Controls.Add(MakeLabel("Local diagnostics • Token-free updater v0.3", 24, 62, 320, 27, 10, Muted));
 
         sidebar.Controls.Add(MakeLabel("ADB EXECUTABLE", 24, 113, 315, 23, 9, Muted, true));
         StyleTextBox(_adbPath, 24, 139, 315);
@@ -118,29 +117,16 @@ public sealed class MainForm : Form
         _status.Text = "Waiting for ADB connection";
         sidebar.Controls.Add(_status);
 
-        // A token is only used to read CI artifacts from the owner's private repository.
-        sidebar.Controls.Add(MakeLabel("GITHUB UPDATES (PRIVATE REPO)", 24, 662, 315, 23, 9, Muted, true));
-        StyleTextBox(_githubToken, 24, 689, 315);
-        _githubToken.UseSystemPasswordChar = true;
-        _githubToken.PlaceholderText = "Fine-grained token: Actions Read";
-        sidebar.Controls.Add(_githubToken);
-
-        AddButton(sidebar, "Save token", 24, 728, 151, () =>
-        {
-            GitHubTokenStore.Save(_githubToken.Text);
-            _githubToken.Clear();
-            Log("GitHub read-only token saved to Windows Credential Manager.");
-            return Task.CompletedTask;
-        });
-        AddButton(sidebar, "Remove token", 188, 728, 151, () =>
+        sidebar.Controls.Add(MakeLabel("GITHUB UPDATES (PUBLIC)", 24, 662, 315, 23, 9, Muted, true));
+        sidebar.Controls.Add(MakeLabel("No token or GitHub login required.", 24, 692, 315, 25, 10, Foreground));
+        AddButton(sidebar, "Check & install update", 24, 734, 315, CheckForUpdatesAsync, true);
+        AddButton(sidebar, "Remove old GitHub token", 24, 784, 315, () =>
         {
             GitHubTokenStore.Clear();
-            _githubToken.Clear();
-            Log("GitHub updater token removed.");
+            Log("Legacy GitHub token removed from Windows Credential Manager.");
             return Task.CompletedTask;
         });
-        AddButton(sidebar, "Check & install update", 24, 781, 315, CheckForUpdatesAsync, true);
-        sidebar.Controls.Add(MakeLabel("Token: SnailCommander repo • Actions: Read", 24, 827, 315, 26, 9, Muted));
+        sidebar.Controls.Add(MakeLabel("You can also revoke old tokens on GitHub.", 24, 832, 315, 26, 9, Muted));
 
         var right = new TableLayoutPanel { Dock = DockStyle.Fill, BackColor = Bg, Padding = new Padding(18) };
         right.RowCount = 4;
@@ -270,21 +256,17 @@ public sealed class MainForm : Form
 
     private async Task CheckForUpdatesAsync()
     {
-        var token = GitHubTokenStore.Read();
-        if (string.IsNullOrWhiteSpace(token))
-            throw new InvalidOperationException("Save a GitHub fine-grained token with Actions: Read permission first.");
-
-        Log("Checking latest successful Windows build on GitHub...");
-        var newest = await GitHubUpdates.LatestAsync(token);
+        Log("Checking latest public Snail Commander release...");
+        var newest = await GitHubUpdates.LatestAsync();
         if (GitHubUpdates.AlreadyInstalled(newest))
         {
-            _status.Text = "You already have the latest GitHub build.";
+            _status.Text = "You already have the latest release.";
             Log("Already up to date: " + newest.CommitSha[..10]);
             return;
         }
 
         var answer = MessageBox.Show(this,
-            $"A newer Snail Commander build is available (commit {newest.CommitSha[..10]}).\n\n" +
+            $"A newer Snail Commander release is available (commit {newest.CommitSha[..10]}).\n\n" +
             "Download it, close Snail Commander, install the update, and reopen automatically?\n\n" +
             "Your screenshots and logs will be kept.",
             "Update from GitHub", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
@@ -295,10 +277,10 @@ public sealed class MainForm : Form
             return;
         }
 
-        _status.Text = "Downloading verified GitHub build...";
-        Log("Downloading update from private GitHub Actions artifact.");
-        var staging = await GitHubUpdates.DownloadAndPrepareAsync(newest, token);
-        Log("Update staged. Launching external installer and closing the app...");
+        _status.Text = "Downloading public GitHub release...";
+        Log("Downloading public release and verifying package SHA-256.");
+        var staging = await GitHubUpdates.DownloadAndPrepareAsync(newest);
+        Log("Update verified and staged. Closing app for external installer...");
         GitHubUpdates.LaunchInstallerAndExit(staging);
         BeginInvoke(new Action(Close));
     }
