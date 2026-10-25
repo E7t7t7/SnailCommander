@@ -1,14 +1,26 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
 
 namespace SnailCommander;
 
 /// <summary>
-/// Snail Commander v0.4: local-first read-only observation workspace.
+/// Snail Commander v0.5: continuous local live preview and read-only observation workspace.
 /// No gameplay taps, swipes, in-game spending, or automated gameplay.
 /// </summary>
 public sealed class MainForm : Form
 {
     private readonly LocalPreferences _preferences = LocalPreferences.Load();
+    private readonly System.Windows.Forms.Timer _liveTimer = new() { Interval = 2000 };
+    private readonly SemaphoreSlim _captureGate = new(1, 1);
+    private readonly Label _liveLabel = Theme.TextLabel("LIVE • Starting...", 10, true, Theme.Accent);
+    private readonly ComboBox _liveSpeed = Theme.DropDown();
+    private readonly List<ModernButton> _liveToggleButtons = new();
+    private bool _liveEnabled = true;
+    private int _liveFailureCount;
+    private DateTime _nextReconnect = DateTime.MinValue;
+    private DateTime _lastArchive = DateTime.MinValue;
+    private string _lastArchivedHash = "";
+    private string _lastLiveFailure = "";
     private readonly Dictionary<string, Panel> _pages = new();
     private readonly Dictionary<string, ModernButton> _nav = new();
     private readonly List<Button> _actionButtons = new();
@@ -19,7 +31,7 @@ public sealed class MainForm : Form
     private readonly Label _captureMetric = Theme.TextLabel("None yet", 15, true);
     private readonly Label _resolutionMetric = Theme.TextLabel("—", 15, true);
     private readonly Label _quickStatus = Theme.TextLabel("Connect to BlueStacks to begin.", 10, color: Theme.Secondary);
-    private readonly Label _overviewCaption = Theme.TextLabel("No capture yet. Connect a device and select Capture screen.", 9, color: Theme.Secondary);
+    private readonly Label _overviewCaption = Theme.TextLabel("Waiting for automatic BlueStacks live feed...", 9, color: Theme.Secondary);
     private readonly Label _archiveDetails = Theme.TextLabel("Select a capture to inspect its metadata.", 10, color: Theme.Secondary);
     private readonly PictureBox _latestImage = MakePicture();
     private readonly PictureBox _archiveImage = MakePicture();
@@ -45,7 +57,7 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "Snail Commander  •  v0.4.0";
+        Text = "Snail Commander  •  v0.5.0";
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(1080, 720);
         Size = new Size(1350, 850);
@@ -68,10 +80,27 @@ public sealed class MainForm : Form
 
         _devicesQuick.SelectedIndexChanged += (_, _) => SyncDevice(_devicesQuick);
         _devicesSettings.SelectedIndexChanged += (_, _) => SyncDevice(_devicesSettings);
+        _liveEnabled = _preferences.LivePreviewEnabled;
+        int interval = _preferences.LiveIntervalSeconds;
+        if (interval is not (1 or 2 or 5 or 10)) interval = 2;
+        _liveTimer.Interval = interval * 1000;
+        foreach (int seconds in new[] { 1, 2, 5, 10 }) _liveSpeed.Items.Add($"{seconds} sec");
+        _liveSpeed.SelectedItem = $"{interval} sec";
+        _liveSpeed.SelectedIndexChanged += (_, _) => ApplyLiveInterval();
+        _liveTimer.Tick += async (_, _) => await CaptureLiveFrameAsync();
+        UpdateLiveControls();
         LoadCaptureHistory();
         SelectPage("Overview");
-        Log("Snail Commander v0.4.0 launched. Read-only mode: no gameplay input.");
-        Shown += async (_, _) => await ExecuteAsync(InitializeConnectionAsync);
+        Log("Snail Commander v0.5.0 launched. Live preview defaults to ON; no gameplay inputs.");
+        Shown += async (_, _) =>
+        {
+            await ExecuteAsync(InitializeConnectionAsync);
+            if (_liveEnabled)
+            {
+                _liveTimer.Start();
+                await CaptureLiveFrameAsync();
+            }
+        };
     }
 
     private static PictureBox MakePicture() => new()
@@ -135,7 +164,7 @@ public sealed class MainForm : Form
         state.Dock = DockStyle.Top;
         state.Height = 26;
         sidebarFooter.Controls.Add(state);
-        var version = Theme.TextLabel("v0.4.0   •   Local-first", 9, color: Theme.Secondary);
+        var version = Theme.TextLabel("v0.5.0   •   Local-first", 9, color: Theme.Secondary);
         version.Dock = DockStyle.Top;
         version.Height = 27;
         sidebarFooter.Controls.Add(version);
@@ -187,7 +216,7 @@ public sealed class MainForm : Form
             FlowDirection = FlowDirection.RightToLeft, WrapContents = false,
             Padding = new Padding(0, 12, 0, 0)
         };
-        var capture = MakeButton("Capture screen", CaptureAsync, true);
+        var capture = MakeLiveToggle("Pause live", true);
         capture.Width = 160;
         capture.Height = 42;
         var update = MakeButton("Update GitHub", CheckForUpdatesAsync);
@@ -225,7 +254,7 @@ public sealed class MainForm : Form
         var previewCard = new SurfacePanel();
         previewCard.Dock = DockStyle.Fill;
         var previewGrid = Theme.Table((SizeType.Absolute, 37), (SizeType.Percent, 100), (SizeType.Absolute, 39));
-        previewGrid.Controls.Add(Theme.TextLabel("LATEST GAME CAPTURE", 10, true, Theme.Secondary), 0, 0);
+        previewGrid.Controls.Add(Theme.TextLabel("LIVE BLUESTACKS VIEW", 10, true, Theme.Accent), 0, 0);
         previewGrid.Controls.Add(_latestImage, 0, 1);
         previewGrid.Controls.Add(_overviewCaption, 0, 2);
         previewCard.Controls.Add(previewGrid);
@@ -233,28 +262,31 @@ public sealed class MainForm : Form
 
         var quickCard = new SurfacePanel { Dock = DockStyle.Fill };
         var quick = Theme.Table(
+            (SizeType.Absolute, 32),
+            (SizeType.Absolute, 35),
+            (SizeType.Absolute, 23),
+            (SizeType.Absolute, 38),
+            (SizeType.Absolute, 32),
+            (SizeType.Absolute, 38),
             (SizeType.Absolute, 43),
-            (SizeType.Absolute, 46),
-            (SizeType.Absolute, 30),
-            (SizeType.Absolute, 42),
-            (SizeType.Absolute, 54),
-            (SizeType.Absolute, 47),
-            (SizeType.Absolute, 42),
+            (SizeType.Absolute, 39),
+            (SizeType.Absolute, 38),
             (SizeType.Percent, 100));
-        quick.Controls.Add(Theme.TextLabel("QUICK CONTROL", 11, true), 0, 0);
-        quick.Controls.Add(_quickStatus, 0, 1);
+        quick.Controls.Add(Theme.TextLabel("LIVE CONTROL", 11, true), 0, 0);
+        quick.Controls.Add(_liveLabel, 0, 1);
         quick.Controls.Add(Theme.TextLabel("CONNECTED DEVICE", 9, true, Theme.Secondary), 0, 2);
         quick.Controls.Add(_devicesQuick, 0, 3);
-        quick.Controls.Add(MakeButton("Capture game screen", CaptureAsync, true), 0, 4);
-        quick.Controls.Add(MakeButton("Connect / refresh", () => ExecuteConnectAsync()), 0, 5);
-        quick.Controls.Add(MakeButton("Open capture folder", OpenCapturesAsync), 0, 6);
+        quick.Controls.Add(Theme.TextLabel("PREVIEW REFRESH RATE", 9, true, Theme.Secondary), 0, 4);
+        quick.Controls.Add(_liveSpeed, 0, 5);
+        quick.Controls.Add(MakeLiveToggle("Pause live preview", true), 0, 6);
+        quick.Controls.Add(MakeButton("Save snapshot", CaptureAsync), 0, 7);
+        quick.Controls.Add(MakeButton("Reconnect devices", ExecuteConnectAsync), 0, 8);
         var tip = Theme.TextLabel(
-            "TIP   Open Super Snail before capturing.\n\n" +
-            "Captures are stored locally. You can categorize them on the Captures page to build a reference library.",
+            "The game preview updates automatically. Only periodic snapshots (at most one every 10 minutes) are archived when the image changes. Manual saves remain available.",
             9, color: Theme.Secondary);
         tip.TextAlign = ContentAlignment.TopLeft;
-        tip.Padding = new Padding(0, 16, 0, 0);
-        quick.Controls.Add(tip, 0, 7);
+        tip.Padding = new Padding(0, 12, 0, 0);
+        quick.Controls.Add(tip, 0, 9);
         quickCard.Controls.Add(quick);
         body.Controls.Add(quickCard, 1, 0);
 
@@ -476,6 +508,136 @@ public sealed class MainForm : Form
         return button;
     }
 
+    private ModernButton MakeLiveToggle(string title, bool primary = false)
+    {
+        var button = MakeButton(title, ToggleLiveAsync, primary);
+        _liveToggleButtons.Add(button);
+        return button;
+    }
+
+    private Task ToggleLiveAsync()
+    {
+        _liveEnabled = !_liveEnabled;
+        _preferences.LivePreviewEnabled = _liveEnabled;
+        SavePreferences();
+        if (_liveEnabled)
+        {
+            _liveTimer.Start();
+            _ = CaptureLiveFrameAsync();
+        }
+        else
+        {
+            _liveTimer.Stop();
+        }
+        UpdateLiveControls();
+        Log(_liveEnabled ? "Live preview resumed." : "Live preview paused.");
+        return Task.CompletedTask;
+    }
+
+    private void ApplyLiveInterval()
+    {
+        if (_liveSpeed.SelectedItem is not string selected
+            || !int.TryParse(selected.Split(' ')[0], out int seconds)
+            || seconds is not (1 or 2 or 5 or 10)) return;
+        _liveTimer.Interval = seconds * 1000;
+        _preferences.LiveIntervalSeconds = seconds;
+        SavePreferences();
+    }
+
+    private void UpdateLiveControls()
+    {
+        foreach (var button in _liveToggleButtons)
+            button.Text = _liveEnabled ? "Pause live preview" : "Resume live preview";
+        _liveLabel.Text = _liveEnabled ? "● LIVE • Automatic" : "Ⅱ  PAUSED";
+        _liveLabel.ForeColor = _liveEnabled ? Theme.Accent : Theme.Warning;
+        if (!_liveEnabled) _overviewCaption.Text = "Live preview paused. Resume to view the emulator.";
+    }
+
+    /// <summary>
+    /// Timer ticks never queue additional screenshots while ADB is busy.
+    /// Frames remain in memory; only a changed image every 10 minutes can be archived.
+    /// </summary>
+    private async Task CaptureLiveFrameAsync()
+    {
+        if (!_liveEnabled || IsDisposed || !IsHandleCreated) return;
+        if (!await _captureGate.WaitAsync(0)) return;
+        try
+        {
+            if (string.IsNullOrWhiteSpace(_selectedDevice))
+            {
+                if (DateTime.UtcNow >= _nextReconnect)
+                {
+                    _nextReconnect = DateTime.UtcNow.AddSeconds(15);
+                    try { await InitializeConnectionAsync(); }
+                    catch (Exception error) { ReportLiveFailure(error); }
+                }
+                return;
+            }
+
+            var png = await AdbService.CaptureAsync(GetAdb(), _selectedDevice);
+            if (IsDisposed || Disposing) return;
+
+            using var stream = new MemoryStream(png, writable: false);
+            using var image = Image.FromStream(stream);
+            var replacement = new Bitmap(image);
+            var previous = _latestImage.Image;
+            _latestImage.Image = replacement;
+            previous?.Dispose();
+
+            _lastImagePath = "<live-preview>";
+            _resolutionMetric.Text = $"{replacement.Width} × {replacement.Height}";
+            _overviewCaption.Text = $"LIVE • Updated {DateTime.Now:HH:mm:ss} • {_selectedDevice} • In memory";
+            _liveLabel.Text = "● LIVE • " + DateTime.Now.ToString("HH:mm:ss");
+            _liveLabel.ForeColor = Theme.Accent;
+            _liveFailureCount = 0;
+            _lastLiveFailure = "";
+
+            if (DateTime.UtcNow - _lastArchive >= TimeSpan.FromMinutes(10))
+            {
+                string hash = Convert.ToHexString(SHA256.HashData(png));
+                _lastArchive = DateTime.UtcNow;
+                if (!string.Equals(hash, _lastArchivedHash, StringComparison.Ordinal))
+                {
+                    try
+                    {
+                        var record = await CaptureStore.SaveAsync(png, _selectedDevice);
+                        _lastArchivedHash = hash;
+                        LoadCaptureHistory();
+                        Log($"Auto-archived changed screen ({record.Dimensions}): {record.FileName}");
+                    }
+                    catch (Exception archiveError)
+                    {
+                        Log("Auto-archive failed: " + archiveError.Message);
+                    }
+                }
+            }
+        }
+        catch (Exception error)
+        {
+            ReportLiveFailure(error);
+        }
+        finally { _captureGate.Release(); }
+    }
+
+    private void ReportLiveFailure(Exception error)
+    {
+        _liveFailureCount++;
+        string description = error.GetType().Name + ": " + error.Message;
+        _liveLabel.Text = "● RECONNECTING";
+        _liveLabel.ForeColor = Theme.Warning;
+        if (_lastLiveFailure != description || _liveFailureCount == 1)
+        {
+            Log("Live capture interrupted: " + description);
+            _lastLiveFailure = description;
+        }
+        if (_liveFailureCount >= 3)
+        {
+            _selectedDevice = "";
+            _nextReconnect = DateTime.UtcNow.AddSeconds(15);
+            _liveFailureCount = 0;
+        }
+    }
+
     private async Task ExecuteAsync(Func<Task> action)
     {
         if (_busy) return;
@@ -639,13 +801,17 @@ public sealed class MainForm : Form
         if (string.IsNullOrWhiteSpace(_selectedDevice))
             throw new InvalidOperationException("No ADB device selected. Open Connection settings.");
 
-        byte[] png = await AdbService.CaptureAsync(GetAdb(), _selectedDevice);
-        var record = await CaptureStore.SaveAsync(png, _selectedDevice);
-        LoadCaptureHistory();
-        PresentCapture(record);
-        SelectPage("Overview");
-        SetStatus("Saved screenshot: " + record.FileName);
-        Log($"Captured {record.Dimensions} from {_selectedDevice} • {record.FileName}");
+        await _captureGate.WaitAsync();
+        try
+        {
+            byte[] png = await AdbService.CaptureAsync(GetAdb(), _selectedDevice);
+            var record = await CaptureStore.SaveAsync(png, _selectedDevice);
+            LoadCaptureHistory();
+            if (!_liveEnabled) PresentCapture(record);
+            SetStatus("Saved snapshot: " + record.FileName);
+            Log($"Saved manual snapshot {record.Dimensions} from {_selectedDevice} • {record.FileName}");
+        }
+        finally { _captureGate.Release(); }
     }
 
     private void LoadCaptureHistory()
@@ -787,6 +953,8 @@ public sealed class MainForm : Form
 
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
+        _liveTimer.Stop();
+        _liveTimer.Dispose();
         _latestImage.Image?.Dispose();
         _archiveImage.Image?.Dispose();
         base.OnFormClosed(e);
