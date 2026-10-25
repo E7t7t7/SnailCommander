@@ -1,10 +1,12 @@
 # Snail Commander
 
+**v0.5.1 fixes a header-layout defect that hid the update controls in v0.4/v0.5 on some PCs.** If the update button is missing in your existing installed version, manually download and extract the v0.5.1 release once. Future updates are accessible from the sidebar and header.
+
 **v0.5.0 adds automatic read-only LIVE screen capture from BlueStacks.** No refresh/capture clicking is required to see the current emulator screen. The app polls the selected device roughly every two seconds by default (1, 2, 5, or 10 seconds configurable), updates the preview in memory, and tries reconnecting when the ADB connection drops. It auto-archives at most one changed screenshot every 10 minutes; use **Save snapshot** for an extra permanent capture. Pause and resume from either the header or Overview panel. The live stream is **local to this Windows app**: it is not automatically visible to a ChatGPT conversation or a remote AI model.
 
 A local-first **Windows companion** for Super Snail running inside BlueStacks.
 
-## v0.5.0 — Live screen preview and command dashboard
+## v0.5.1 — Always-visible GitHub update button
 
 The v0.4 release replaces the cramped original diagnostics screen with a dark navigation workspace:
 
@@ -12,7 +14,7 @@ The v0.4 release replaces the cramped original diagnostics screen with a dark na
 - **Captures:** local screenshot history with timestamps, device details, resolution and manual screen-type labels (Home, Story/Memory, Exploration, Battle, Equipment, Relics, Research, Event, Other).
 - **Connection:** auto-detect ADB on app launch, reconnect BlueStacks, switch between available Android device serials, adjust local endpoint, and remember preferred ADB executable and device.
 - **Activity:** persistent diagnostic logs and accessible log folder.
-- **Update GitHub:** one-click token-free updates using public GitHub Releases. The download is verified against the release asset SHA-256 digest before installation. A separate update worker closes/reopens the app and backs up overwritten files.
+- **Update from GitHub:** visible in both the left navigation and top-right header, with a fixed-column layout so Windows display scaling cannot hide it. One-click token-free public GitHub Releases updates. The download is verified against the release asset SHA-256 digest before installation. A separate update worker closes/reopens the app and backs up overwritten files.
 
 **Important:** The application remains **read-only**. It does not tap game controls, manage resources, or play unattended. Saved screen labels are provided by the user—they are not automatically inferred by an AI model yet.
 
