@@ -150,7 +150,25 @@ public sealed class MainForm : Form
         right.RowStyles.Add(new RowStyle(SizeType.Percent, 25));
         root.Controls.Add(right, 1, 0);
 
-        right.Controls.Add(MakeLabel("Screenshot preview", 4, 2, 500, 36, 16, Foreground, true), 0, 0);
+        var captureHeader = new Panel { Dock = DockStyle.Fill };
+        var title = MakeLabel("Screenshot preview", 4, 2, 330, 36, 16, Foreground, true);
+        title.Dock = DockStyle.Left;
+        captureHeader.Controls.Add(title);
+        var topUpdate = new Button
+        {
+            Text = "Update from GitHub",
+            Dock = DockStyle.Right,
+            Width = 185,
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Accent,
+            ForeColor = Foreground,
+            Cursor = Cursors.Hand
+        };
+        topUpdate.FlatAppearance.BorderSize = 0;
+        topUpdate.Click += async (_, _) => await ExecuteAsync(CheckForUpdatesAsync);
+        _buttons.Add(topUpdate);
+        captureHeader.Controls.Add(topUpdate);
+        right.Controls.Add(captureHeader, 0, 0);
         _preview.Dock = DockStyle.Fill;
         _preview.BackColor = Color.FromArgb(7, 11, 20);
         _preview.BorderStyle = BorderStyle.FixedSingle;
