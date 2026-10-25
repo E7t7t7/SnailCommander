@@ -7,6 +7,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: windows-latest
@@ -21,16 +24,46 @@ jobs:
         shell: pwsh
         run: |
           $revision = $env:GITHUB_SHA
-          dotnet publish src/SnailCommander/SnailCommander.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true "-p:InformationalVersion=0.2.0+$revision" -o publish
+          dotnet publish src/SnailCommander/SnailCommander.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true "-p:InformationalVersion=0.3.0+$revision" -o publish
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           dotnet publish src/SnailCommander.Updater/SnailCommander.Updater.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o updater-publish
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Copy-Item updater-publish/SnailCommander.Updater.exe publish/SnailCommander.Updater.exe
           if (!(Test-Path publish/SnailCommander.exe) -or !(Test-Path publish/SnailCommander.Updater.exe)) { throw "Missing updater or app executable." }
-      - name: Upload Windows build for one-click updater
+      - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:
           name: SnailCommander-win-x64
           path: publish/
           if-no-files-found: error
           retention-days: 90
+
+  publish-release:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download compiled Windows build
+        uses: actions/download-artifact@v4
+        with:
+          name: SnailCommander-win-x64
+          path: publish
+      - name: Package and publish public release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f publish/SnailCommander.exe
+          test -f publish/SnailCommander.Updater.exe
+          cd publish
+          zip -q -r ../SnailCommander-win-x64.zip .
+          cd ..
+          gh release create "build-${GITHUB_SHA}" "SnailCommander-win-x64.zip" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --target "${GITHUB_SHA}" \
+            --title "Snail Commander (build ${GITHUB_SHA:0:10})" \
+            --notes "Read-only BlueStacks companion. Public Windows x64 build from the main branch, commit ${GITHUB_SHA}. No GitHub token required for downloads." \
+            --latest
