@@ -57,7 +57,7 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "Snail Commander  •  v0.5.0";
+        Text = "Snail Commander  •  v0.5.1";
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(1080, 720);
         Size = new Size(1350, 850);
@@ -91,7 +91,7 @@ public sealed class MainForm : Form
         UpdateLiveControls();
         LoadCaptureHistory();
         SelectPage("Overview");
-        Log("Snail Commander v0.5.0 launched. Live preview defaults to ON; no gameplay inputs.");
+        Log("Snail Commander v0.5.1 launched. Live preview defaults to ON; no gameplay inputs.");
         Shown += async (_, _) =>
         {
             await ExecuteAsync(InitializeConnectionAsync);
@@ -164,7 +164,7 @@ public sealed class MainForm : Form
         state.Dock = DockStyle.Top;
         state.Height = 26;
         sidebarFooter.Controls.Add(state);
-        var version = Theme.TextLabel("v0.5.0   •   Local-first", 9, color: Theme.Secondary);
+        var version = Theme.TextLabel("v0.5.1   •   Local-first", 9, color: Theme.Secondary);
         version.Dock = DockStyle.Top;
         version.Height = 27;
         sidebarFooter.Controls.Add(version);
@@ -196,6 +196,15 @@ public sealed class MainForm : Form
             _nav[name] = button;
         }
 
+        // Permanent, highly visible sidebar button; cannot be obscured by header layout.
+        var sidebarUpdate = MakeButton("   ↻   UPDATE FROM GITHUB", CheckForUpdatesAsync, true);
+        sidebarUpdate.Dock = DockStyle.None;
+        sidebarUpdate.TextAlign = ContentAlignment.MiddleLeft;
+        sidebarUpdate.Width = 184;
+        sidebarUpdate.Height = 49;
+        sidebarUpdate.Margin = new Padding(3, 17, 3, 6);
+        navStack.Controls.Add(sidebarUpdate);
+
         var main = new TableLayoutPanel
         {
             Dock = DockStyle.Fill, RowCount = 3, ColumnCount = 1,
@@ -206,25 +215,28 @@ public sealed class MainForm : Form
         main.RowStyles.Add(new RowStyle(SizeType.Absolute, 33));
         root.Controls.Add(main, 1, 0);
 
-        var header = new Panel { Dock = DockStyle.Fill, BackColor = Theme.Background };
-        _pageTitle.Dock = DockStyle.Fill;
-        header.Controls.Add(_pageTitle);
-
-        var actions = new FlowLayoutPanel
+        // Use explicit columns. A Dock.Fill heading overlaid the old action panel
+        // on some Windows display sizes / DPI settings, hiding both buttons.
+        var header = new TableLayoutPanel
         {
-            Dock = DockStyle.Right, Width = 330,
-            FlowDirection = FlowDirection.RightToLeft, WrapContents = false,
-            Padding = new Padding(0, 12, 0, 0)
+            Dock = DockStyle.Fill, BackColor = Theme.Background,
+            ColumnCount = 3, RowCount = 1,
+            Padding = new Padding(0, 10, 0, 10)
         };
-        var capture = MakeLiveToggle("Pause live", true);
-        capture.Width = 160;
-        capture.Height = 42;
-        var update = MakeButton("Update GitHub", CheckForUpdatesAsync);
-        update.Width = 149;
-        update.Height = 42;
-        actions.Controls.Add(capture);
-        actions.Controls.Add(update);
-        header.Controls.Add(actions);
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 175));
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 165));
+        header.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        _pageTitle.Dock = DockStyle.Fill;
+        header.Controls.Add(_pageTitle, 0, 0);
+
+        var capture = MakeLiveToggle("Pause live preview", true);
+        capture.Dock = DockStyle.Fill;
+        header.Controls.Add(capture, 1, 0);
+
+        var update = MakeButton("Update from GitHub", CheckForUpdatesAsync);
+        update.Dock = DockStyle.Fill;
+        header.Controls.Add(update, 2, 0);
 
         main.Controls.Add(header, 0, 0);
         main.Controls.Add(_pageHost, 0, 1);
