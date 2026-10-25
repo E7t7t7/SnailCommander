@@ -24,7 +24,7 @@ jobs:
         shell: pwsh
         run: |
           $revision = $env:GITHUB_SHA
-          dotnet publish src/SnailCommander/SnailCommander.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true "-p:InformationalVersion=0.4.0+$revision" -o publish
+          dotnet publish src/SnailCommander/SnailCommander.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true "-p:InformationalVersion=0.5.0+$revision" -o publish
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           dotnet publish src/SnailCommander.Updater/SnailCommander.Updater.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o updater-publish
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
