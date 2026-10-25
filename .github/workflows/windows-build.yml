@@ -17,19 +17,20 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Publish self-contained Windows x64 application
+      - name: Publish self-contained Windows x64 application and updater
         shell: pwsh
-        run: >
-          dotnet publish src/SnailCommander/SnailCommander.csproj
-          -c Release
-          -r win-x64
-          --self-contained true
-          -p:PublishSingleFile=true
-          -p:IncludeNativeLibrariesForSelfExtract=true
-          -o publish
-      - name: Upload compiled application
+        run: |
+          $revision = $env:GITHUB_SHA
+          dotnet publish src/SnailCommander/SnailCommander.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true "-p:InformationalVersion=0.2.0+$revision" -o publish
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet publish src/SnailCommander.Updater/SnailCommander.Updater.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o updater-publish
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item updater-publish/SnailCommander.Updater.exe publish/SnailCommander.Updater.exe
+          if (!(Test-Path publish/SnailCommander.exe) -or !(Test-Path publish/SnailCommander.Updater.exe)) { throw "Missing updater or app executable." }
+      - name: Upload Windows build for one-click updater
         uses: actions/upload-artifact@v4
         with:
           name: SnailCommander-win-x64
           path: publish/
           if-no-files-found: error
+          retention-days: 90
