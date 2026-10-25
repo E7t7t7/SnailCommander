@@ -1,12 +1,14 @@
 # Snail Commander
 
+**v0.5.0 adds automatic read-only LIVE screen capture from BlueStacks.** No refresh/capture clicking is required to see the current emulator screen. The app polls the selected device roughly every two seconds by default (1, 2, 5, or 10 seconds configurable), updates the preview in memory, and tries reconnecting when the ADB connection drops. It auto-archives at most one changed screenshot every 10 minutes; use **Save snapshot** for an extra permanent capture. Pause and resume from either the header or Overview panel. The live stream is **local to this Windows app**: it is not automatically visible to a ChatGPT conversation or a remote AI model.
+
 A local-first **Windows companion** for Super Snail running inside BlueStacks.
 
-## v0.4.0 — Command dashboard redesign
+## v0.5.0 — Live screen preview and command dashboard
 
 The v0.4 release replaces the cramped original diagnostics screen with a dark navigation workspace:
 
-- **Overview:** large game screenshot preview, connection status, current capture resolution, fast Capture Screen button, and recent activity log.
+- **Overview:** continuously refreshing portrait-friendly game preview, automatic ADB reconnect, refresh-rate dropdown, pause/resume, manual Save snapshot, connection indicators, and recent activity.
 - **Captures:** local screenshot history with timestamps, device details, resolution and manual screen-type labels (Home, Story/Memory, Exploration, Battle, Equipment, Relics, Research, Event, Other).
 - **Connection:** auto-detect ADB on app launch, reconnect BlueStacks, switch between available Android device serials, adjust local endpoint, and remember preferred ADB executable and device.
 - **Activity:** persistent diagnostic logs and accessible log folder.
@@ -35,7 +37,7 @@ No GitHub login, token, .NET runtime or additional AI subscription is required t
 2. Start Snail Commander. It will try to detect and connect to a local ADB endpoint automatically.
 3. If it does not connect, go to **Connection**, select the local ADB executable (typically HD-Adb.exe), enter the BlueStacks port (e.g. 127.0.0.1:5555), and click Connect.
 4. Select the correct authorized emulator device in the dropdown.
-5. Go to Overview → **Capture screen**.
+5. Go to **Overview** and watch the game appear automatically. No button needed to refresh the view.
 6. Find saved screenshots under your Windows **Pictures/SnailCommander/Captures** folder. Select a file in **Captures** and optionally label the kind of screen.
 
 The desktop emulator window size can differ from the Android framebuffer resolution. Snail Commander reports the actual captured dimensions automatically. It supports portrait and landscape captures.
@@ -44,7 +46,7 @@ Screenshots, labels, connection settings, and logs stay on your Windows computer
 
 ## Notes and limitations
 
-- Capture classification requires manual labels; image text/OCR is not implemented yet.
+- Automatic screen capture is enabled; screen classification still requires manual labels. Image text/OCR and AI interpretation are not implemented yet.
 - ADB permission and emulator availability depend on BlueStacks settings.
 - Week-long unattended gameplay is **not** implemented or verified.
 - Super Snail's published rules restrict gameplay automation; using such automation could risk the account.
