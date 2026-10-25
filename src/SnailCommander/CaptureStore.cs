@@ -106,6 +106,8 @@ internal sealed class LocalPreferences
     public string AdbPath { get; set; } = "";
     public string Endpoint { get; set; } = "127.0.0.1:5555";
     public string PreferredDevice { get; set; } = "";
+    public bool LivePreviewEnabled { get; set; } = true;
+    public int LiveIntervalSeconds { get; set; } = 2;
 
     private static readonly string FilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
