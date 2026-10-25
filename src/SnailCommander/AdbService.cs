@@ -50,7 +50,7 @@ internal static class AdbService
 
         foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
         {
-            var columns = line.Trim().Split(' ', '\t', StringSplitOptions.RemoveEmptyEntries);
+            var columns = line.Trim().Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
             if (columns.Length >= 2 && columns[1] == "device")
                 devices.Add(columns[0]);
         }
