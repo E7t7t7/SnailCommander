@@ -5,7 +5,7 @@
 - Application: **0.6.1**. Source baseline audited: `main` at `f1c62c8854183a8b11a4e69627c4ec58966d05fc` (v0.5.1).
 - Source checkout: `source/` inside the user's SnailCommander workspace; the original workspace contained extracted releases, not a Git checkout. Existing installed copies were preserved.
 - Last verified public release before publishing this session: `build-f1c62c8854183a8b11a4e69627c4ec58966d05fc`.
-- Release 0.6.0 (`6979ef846c863cafb6cdcbc9326537879bf2fb9b`) passed CI and published. Download verification caught duplicated SDK revision metadata causing same-build update offers; corrected in 0.6.1, pending final CI verification. Public release publishing runs automatically on a successful push to `main`; build tags remain `build-<commit>` for existing updater compatibility.
+- Release 0.6.0 (`6979ef846c863cafb6cdcbc9326537879bf2fb9b`) passed CI and published. Download verification caught duplicated SDK revision metadata causing same-build update offers; corrected in **0.6.1**, published as `build-3f3bebe212a59d17d5f4fbed31b9c40cff245b24`. [Release](https://github.com/E7t7t7/SnailCommander/releases/tag/build-3f3bebe212a59d17d5f4fbed31b9c40cff245b24); [successful CI run](https://github.com/E7t7t7/SnailCommander/actions/runs/41316197872). Public release publishing runs automatically on a successful push to `main`; build tags remain `build-<commit>` for existing updater compatibility.
 - Session dates: 2026-10-31 to 2026-11-01, America/New_York.
 
 ## Verified working
@@ -29,7 +29,7 @@
 
 - Baseline Release build: 0 warnings, 0 errors.
 - Updated app Release build: 0 warnings, 0 errors.
-- Updater Release build and self-contained app/updater publish: successful.
+- Updater Release build and self-contained app/updater publish: successful. v0.6.1 product metadata is exactly `0.6.1+3f3bebe212a59d17d5f4fbed31b9c40cff245b24`; the emitted Windows executable was checked.
 - Deterministic regression runner: **113 assertions, 0 failures**. Covers device parsing, classification/resource parsing, cadence/resolution/device changes, retained persistence/replay, minion constraints/synergies/objectives, bounded search, brute-force comparison, cloning reserves, provenance, digest/path checks, install/rollback/journal/retention, startup nonce acknowledgment.
 - Actual BlueStacks integration: started installed Pie64 instance; both `emulator-5554` and `127.0.0.1:5555` connected. Capture from 127.0.0.1:5555 worked.
 - Live landscape launcher: **960 x 540**, 26 OCR regions, `EmulatorHome`, about **240 ms** including persistence/replay checks.
@@ -38,7 +38,7 @@
 - Final packaged app launched successfully. A later visual recheck was blocked by the Windows capture helper returning `CreateForMonitor (0x80070057)`; the earlier GUI smoke and subsequent clean builds are the available evidence, not a verified DPI/scaling matrix.
 - The small deterministic optimizer benchmark compared beam search (~11-14 ms, 23 evaluations) with exhaustive enumeration (~1-2 ms, 15 legal compositions); validation/setup overhead dominates this tiny case. No claim that beam is always faster.
 - Sandbox initially denied atomic temp-file renames; required regression runs passed with normal Windows filesystem access. A build attempted while GUI test processes held a Core DLL was retried after closing those test instances, then passed.
-- No real installed-app update/failed-startup rollback end-to-end test yet; file transaction and acknowledgment logic have deterministic tests. No seven-day soak test, gameplay action, purchase, or account spending was performed.
+- Actual v0.6.1 GUI startup acknowledgment and 10-second liveness passed; a separate initial packaged-app liveness run passed for 30 seconds. No real installed-app update/failed-startup rollback end-to-end test yet; file transaction and acknowledgment logic have deterministic tests. No seven-day soak test, gameplay action, purchase, or account spending was performed.
 
 ## Incomplete and known limitations
 
@@ -64,3 +64,10 @@
 ## Architectural decisions
 
 Use existing WinForms, built-in Windows OCR, pure .NET Core logic and a dependency-free regression runner. Initial persistence uses bounded, flushed atomic JSON records instead of introducing a SQLite package before account-wide transactions exist. Keep screenshot, account and OCR content local. Preserve public build-SHA updates and the separate updater. Treat synthetic values, heuristic scores and database memory honestly.
+
+## Delivered release verification
+
+- Current public application release: **0.6.1**, source commit `3f3bebe212a59d17d5f4fbed31b9c40cff245b24`. Both GitHub CI jobs completed successfully.
+- Downloaded the actual Latest release ZIP and verified its GitHub SHA-256 digest: `c5291a5c3318ac17ce78890c4e9afd58758dc04400cb5a34e19aa10817b878cd`.
+- Actual downloaded EXE metadata: `0.6.1+3f3bebe212a59d17d5f4fbed31b9c40cff245b24`; no duplicate revision.
+- Local delivery: `SnailCommander-v0.6.1/SnailCommander.exe` and `SnailCommander-v0.6.1.zip` beside this source checkout. Earlier installed folders were preserved; the initially staged 0.6.0 package was retired into ignored development artifacts.
