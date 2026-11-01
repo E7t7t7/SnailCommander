@@ -108,6 +108,12 @@ internal sealed class LocalPreferences
     public string PreferredDevice { get; set; } = "";
     public bool LivePreviewEnabled { get; set; } = true;
     public int LiveIntervalSeconds { get; set; } = 2;
+    public int WindowX { get; set; } = int.MinValue;
+    public int WindowY { get; set; } = int.MinValue;
+    public int WindowWidth { get; set; } = 1280;
+    public int WindowHeight { get; set; } = 800;
+    public bool AutoDownloadUpdates { get; set; }
+    public int UpdateBackupRetention { get; set; } = 3;
 
     private static readonly string FilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

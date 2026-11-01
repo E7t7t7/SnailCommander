@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using SnailCommander.Core.Devices;
 
 namespace SnailCommander;
 
@@ -46,39 +47,33 @@ internal static class AdbService
     public static async Task<IReadOnlyList<string>> GetDevicesAsync(string adb)
     {
         var output = await RunTextAsync(adb, "devices");
-        var devices = new List<string>();
-
-        foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
-        {
-            var columns = line.Trim().Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-            if (columns.Length >= 2 && columns[1] == "device")
-                devices.Add(columns[0]);
-        }
-
-        return devices;
+        return AdbDeviceParser.ConnectedSerials(output);
     }
 
-    public static async Task<byte[]> CaptureAsync(string adb, string serial)
+    public static async Task<byte[]> CaptureAsync(string adb, string serial, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(serial))
             throw new ArgumentException("Choose a connected ADB device first.");
 
         using var process = Start(adb, "-s", serial, "exec-out", "screencap", "-p");
         using var output = new MemoryStream();
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(25));
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(25));
 
         var errorTask = process.StandardError.ReadToEndAsync();
         try
         {
             await Task.WhenAll(
-                process.StandardOutput.BaseStream.CopyToAsync(output, timeout.Token),
+                CopyBoundedAsync(process.StandardOutput.BaseStream, output, timeout.Token),
                 process.WaitForExitAsync(timeout.Token));
         }
         catch (OperationCanceledException)
         {
             Terminate(process);
+            cancellationToken.ThrowIfCancellationRequested();
             throw new TimeoutException("ADB screenshot timed out after 25 seconds.");
         }
+        catch { Terminate(process); throw; }
 
         var error = await errorTask;
         if (process.ExitCode != 0)
@@ -90,6 +85,20 @@ internal static class AdbService
             throw new InvalidDataException("Capture did not return a valid PNG. Check the selected device and BlueStacks ADB support.");
 
         return bytes;
+    }
+
+    private static async Task CopyBoundedAsync(Stream source, Stream destination, CancellationToken ct)
+    {
+        var buffer = new byte[65536];
+        int read;
+        long total = 0;
+        while ((read = await source.ReadAsync(buffer, ct)) > 0)
+        {
+            total += read;
+            if (total > 32 * 1024 * 1024)
+                throw new InvalidDataException("ADB screenshot exceeded the 32 MB capture limit.");
+            await destination.WriteAsync(buffer.AsMemory(0, read), ct);
+        }
     }
 
     private static async Task<string> RunTextAsync(string adb, params string[] arguments)

@@ -6,6 +6,10 @@
 *.user
 *.suo
 TestResults/
+artifacts/
+publish/
+updater-publish/
+*.zip
 
 # Local-only captures, diagnostics and secrets
 captures/

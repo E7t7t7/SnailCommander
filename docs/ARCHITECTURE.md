@@ -1,44 +1,41 @@
-# Snail Commander architecture
+# Architecture
 
-## Goal
+## Implemented boundaries (v0.6.0)
 
-A local-first observation and strategy companion for Super Snail in BlueStacks. Aim for a low-maintenance workflow through reliable account analysis, persistence, and progress reporting. **Autonomous gameplay is neither implemented nor validated**, and the game's published terms may restrict automated gameplay.
+- **Windows shell** (`src/SnailCommander`): WinForms dark UI; live capture and archive; connection/preferences; Intelligence, Minion Command and Updates pages. Partial MainForm files separate feature presentation.
+- **ADB adapter** (`AdbService`): argument-list process execution, finite timeouts, binary PNG validation, 32 MB capture cap, cancelable screenshot operations and authorized-device parsing.
+- **Windows observation adapter** (`Observation/ObservationService`): worker-thread image sampling and Windows OCR. Its independent semaphore prevents queued inference; cadence and perceptual changes govern analysis. Coordinates map back to the actual framebuffer.
+- **Pure observation logic** (`SnailCommander.Core/Observation`): immutable structured records, conservative text screen rules, labeled resource parsing, independent cadence, atomic retained history and deterministic text replay.
+- **Pure troop strategy** (`SnailCommander.Core/Minions`): evidence-tagged account models, effective stats, supplied mode/type/threshold bonuses, bounded composition search, explicit stat scoring and reserve-aware advisory cloning queues.
+- **Pure update logic** (`SnailCommander.Core/Updates`): version policy, digest/package validation, durable file replacement journal and rollback, startup acknowledgment.
+- **External update process** (`SnailCommander.Updater`): waits for app exit, applies staged package, verifies startup and restores on failure. Settings and account data live outside the installation.
+- **Regression runner** (`tests/SnailCommander.Tests`): no test framework dependencies; failed assertions or exceptions yield failure exit code.
+- **Windows integration runner** (`tests/SnailCommander.IntegrationTests`): real PNG/ADB plus Windows OCR, box bounds, persistence/replay and duplicate-screen suppression.
 
-## v0.1.0
+## Current data flow
 
-- Windows Forms dark dashboard
-- Detect BlueStacks' HD-Adb.exe or Android SDK adb.exe
-- Connect to a user-supplied local ADB endpoint
-- Enumerate connected ADB devices
-- Read-only binary screenshot capture using exec-out screencap -p
-- Save local PNG captures and diagnostic logs
+```text
+ADB PNG ---> preview (1-10s) ---> archive (changed frame, >=10min)
+    +----> observation gate ---> sampled change/cadence ---> Windows OCR (worker)
+               +--> screen rules + resource parser ---> structured observation
+                        +--> atomic local history + GUI evidence + text replay
 
-## Safety and reliability boundaries
+Observed account JSON ---> validation/evidence ---> troop search ---> ranked explanations
+                         +--> cloning request + reserves ---> advisory queue (core API)
+```
 
-- No taps, swipes, gameplay interactions, currency spending, upgrades, or in-game purchases
-- No credentials or secret tokens stored
-- No screenshot uploads
-- Capture failures are visible and logged
-- Display dimensions are **detected from the actual screenshot**, not assumed from the size of the BlueStacks desktop window
+Unknown screens and unreadable balances stay unknown. The observation stream is not yet an authoritative account model. Minion statistics are explicit account inputs; repeated OCR text is not silently converted into inventory.
 
-## Follow-on modules
+## Persistence and concurrency
 
-- Screen type classification and OCR
-- Confidence-scored structured account snapshots
-- Local reference database / progression strategies
-- Local compact vision-language model (RTX 4070 Ti 12 GB)
-- Saved comparisons and weekly summaries
-- Error categorization, recovery for observational workflows
+Observation records use immutable individual JSON files with atomic rename, disk flush, a cross-instance writer lock, record limits and bounded retention. Incomplete/corrupt records are skipped. This is an equivalent initial local store rather than SQLite; account-wide transactional relationships will need a database when scheduling/spending is implemented. JSON retention is intentionally finite and not seven days of every-frame recording.
 
-## Environment
+Live capture, observation and update work have separate gates. OCR and optimization do not run synchronously on the GUI thread. Closing cancels pending observation/capture work; late UI callbacks check disposal. Window geometry is restored within an available working area; the app starts in a normal window.
 
-- Windows 11 Pro
-- Intel i9-14900K, RTX 4070 Ti 12 GB, 128 GB DDR5
-- BlueStacks 5
-- .NET 8 WinForms, self-contained win-x64 build
+## Next execution architecture
 
-## Validation
+The intended loop remains OBSERVE -> UNDERSTAND -> UPDATE STATE -> GOALS -> OPTIONS -> PLAN -> EXECUTE -> VERIFY -> LEARN. The current release implements observation, a bounded understanding/state representation, offline composition evaluation, and persistence/replay. It does not implement the full loop.
 
-GitHub Actions compiles the application. Real ADB connectivity and screenshot quality must be tested locally on the user's Windows PC.
+Next: labeled real-screen fixtures and measured recognition coverage; verified account extraction; a bounded ADB action adapter; navigation preconditions and expected postconditions; resource/premium policy; journaled action results and recovery; then persistent scheduling. OCR or a model response alone must never authorize a gameplay action. Retries must stop on unknown state and capture evidence.
 
-No promises of 7-day autonomy before end-to-end tests verify it.
+Local model memory is not neural training. A local VLM should be added only after accuracy, latency and memory benchmarks show value beyond deterministic recognition/OCR. No paid APIs are part of this design.

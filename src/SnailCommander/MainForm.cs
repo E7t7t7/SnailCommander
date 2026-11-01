@@ -4,10 +4,10 @@ using System.Security.Cryptography;
 namespace SnailCommander;
 
 /// <summary>
-/// Snail Commander v0.5: continuous local live preview and read-only observation workspace.
+/// Local observation, OCR, and advisory troop analysis workspace.
 /// No gameplay taps, swipes, in-game spending, or automated gameplay.
 /// </summary>
-public sealed class MainForm : Form
+public sealed partial class MainForm : Form
 {
     private readonly LocalPreferences _preferences = LocalPreferences.Load();
     private readonly System.Windows.Forms.Timer _liveTimer = new() { Interval = 2000 };
@@ -57,10 +57,10 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "Snail Commander  •  v0.5.1";
+        Text = "Snail Commander  •  v0.6.0";
         StartPosition = FormStartPosition.CenterScreen;
-        MinimumSize = new Size(1080, 720);
-        Size = new Size(1350, 850);
+        MinimumSize = new Size(960, 640);
+        Size = new Size(1280, 800);
         AutoScaleMode = AutoScaleMode.Dpi;
         BackColor = Theme.Background;
         ForeColor = Theme.Text;
@@ -72,6 +72,10 @@ public sealed class MainForm : Form
         BuildCaptures();
         BuildConnection();
         BuildActivity();
+        BuildIntelligence();
+        BuildMinionCommand();
+        BuildUpdates();
+        RestoreWindowBounds();
 
         _adbPath.Text = File.Exists(_preferences.AdbPath)
             ? _preferences.AdbPath : AdbService.DiscoverAdb() ?? "";
@@ -91,11 +95,15 @@ public sealed class MainForm : Form
         UpdateLiveControls();
         LoadCaptureHistory();
         SelectPage("Overview");
-        Log("Snail Commander v0.5.1 launched. Live preview defaults to ON; no gameplay inputs.");
+        Log("Snail Commander v0.6.0 launched. Local observation and troop analysis; gameplay execution is not implemented.");
         Shown += async (_, _) =>
         {
+            try { SnailCommander.Core.Updates.StartupHealth.Acknowledge(Environment.GetCommandLineArgs().Skip(1).ToArray()); }
+            catch (Exception ex) { Log("Update startup acknowledgment failed: " + ex.Message); }
+            _ = RefreshUpdateStatusAsync();
+            _updateTimer.Start();
             await ExecuteAsync(InitializeConnectionAsync);
-            if (_liveEnabled)
+            if (_liveEnabled && !IsDisposed && !Disposing)
             {
                 _liveTimer.Start();
                 await CaptureLiveFrameAsync();
@@ -164,7 +172,7 @@ public sealed class MainForm : Form
         state.Dock = DockStyle.Top;
         state.Height = 26;
         sidebarFooter.Controls.Add(state);
-        var version = Theme.TextLabel("v0.5.1   •   Local-first", 9, color: Theme.Secondary);
+        var version = Theme.TextLabel("v0.6.0   •   Local-first", 9, color: Theme.Secondary);
         version.Dock = DockStyle.Top;
         version.Height = 27;
         sidebarFooter.Controls.Add(version);
@@ -174,14 +182,15 @@ public sealed class MainForm : Form
         var navStack = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown,
-            WrapContents = false, AutoScroll = false,
-            BackColor = Theme.Sidebar, Padding = new Padding(0, 8, 0, 0)
+            WrapContents = false, AutoScroll = true,
+            BackColor = Theme.Sidebar, Padding = new Padding(0, 8, 0, 0), Margin = Padding.Empty
         };
         sidebar.Controls.Add(navStack, 0, 1);
         foreach (var (name, glyph) in new[]
         {
             ("Overview", "◉"), ("Captures", "▣"),
-            ("Connection", "⌁"), ("Activity", "≡")
+            ("Intelligence", "◇"), ("Minion Command", "♟"),
+            ("Connection", "⌁"), ("Activity", "≡"), ("Updates", "↻")
         })
         {
             var button = new ModernButton($"   {glyph}   {name}")
@@ -197,13 +206,18 @@ public sealed class MainForm : Form
         }
 
         // Permanent, highly visible sidebar button; cannot be obscured by header layout.
-        var sidebarUpdate = MakeButton("   ↻   UPDATE FROM GITHUB", CheckForUpdatesAsync, true);
+        var sidebarUpdate = MakeButton("↻ Update from GitHub", CheckForUpdatesAsync, true);
         sidebarUpdate.Dock = DockStyle.None;
         sidebarUpdate.TextAlign = ContentAlignment.MiddleLeft;
         sidebarUpdate.Width = 184;
         sidebarUpdate.Height = 49;
         sidebarUpdate.Margin = new Padding(3, 17, 3, 6);
         navStack.Controls.Add(sidebarUpdate);
+        navStack.ClientSizeChanged += (_, _) =>
+        {
+            foreach (Control button in navStack.Controls)
+                button.Width = Math.Max(130, navStack.ClientSize.Width - 12);
+        };
 
         var main = new TableLayoutPanel
         {
@@ -224,8 +238,8 @@ public sealed class MainForm : Form
             Padding = new Padding(0, 10, 0, 10)
         };
         header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 175));
-        header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 165));
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 155));
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 155));
         header.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         _pageTitle.Dock = DockStyle.Fill;
         header.Controls.Add(_pageTitle, 0, 0);
@@ -272,7 +286,7 @@ public sealed class MainForm : Form
         previewCard.Controls.Add(previewGrid);
         body.Controls.Add(previewCard, 0, 0);
 
-        var quickCard = new SurfacePanel { Dock = DockStyle.Fill };
+        var quickCard = new SurfacePanel { Dock = DockStyle.Fill, AutoScroll = true };
         var quick = Theme.Table(
             (SizeType.Absolute, 32),
             (SizeType.Absolute, 35),
@@ -293,12 +307,13 @@ public sealed class MainForm : Form
         quick.Controls.Add(MakeLiveToggle("Pause live preview", true), 0, 6);
         quick.Controls.Add(MakeButton("Save snapshot", CaptureAsync), 0, 7);
         quick.Controls.Add(MakeButton("Reconnect devices", ExecuteConnectAsync), 0, 8);
-        var tip = Theme.TextLabel(
-            "The game preview updates automatically. Only periodic snapshots (at most one every 10 minutes) are archived when the image changes. Manual saves remain available.",
-            9, color: Theme.Secondary);
+        var tip = _quickStatus;
+        tip.Text = "Local OCR starts automatically with the live preview. Open Intelligence for screen evidence and recognized text.";
         tip.TextAlign = ContentAlignment.TopLeft;
         tip.Padding = new Padding(0, 12, 0, 0);
         quick.Controls.Add(tip, 0, 9);
+        quick.Dock = DockStyle.Top;
+        quick.Height = 470;
         quickCard.Controls.Add(quick);
         body.Controls.Add(quickCard, 1, 0);
 
@@ -586,8 +601,10 @@ public sealed class MainForm : Form
                 return;
             }
 
-            var png = await AdbService.CaptureAsync(GetAdb(), _selectedDevice);
+            var frameDevice = _selectedDevice;
+            var png = await AdbService.CaptureAsync(GetAdb(), frameDevice, _lifetime.Token);
             if (IsDisposed || Disposing) return;
+            if (frameDevice != _selectedDevice) return;
 
             using var stream = new MemoryStream(png, writable: false);
             using var image = Image.FromStream(stream);
@@ -603,6 +620,7 @@ public sealed class MainForm : Form
             _liveLabel.ForeColor = Theme.Accent;
             _liveFailureCount = 0;
             _lastLiveFailure = "";
+            _ = ObserveFrameAsync(png, frameDevice);
 
             if (DateTime.UtcNow - _lastArchive >= TimeSpan.FromMinutes(10))
             {
@@ -624,6 +642,7 @@ public sealed class MainForm : Form
                 }
             }
         }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
         catch (Exception error)
         {
             ReportLiveFailure(error);
@@ -633,6 +652,7 @@ public sealed class MainForm : Form
 
     private void ReportLiveFailure(Exception error)
     {
+        if (IsDisposed || Disposing || _lifetime.IsCancellationRequested) return;
         _liveFailureCount++;
         string description = error.GetType().Name + ": " + error.Message;
         _liveLabel.Text = "● RECONNECTING";
@@ -658,12 +678,14 @@ public sealed class MainForm : Form
         try { await action(); }
         catch (Exception e)
         {
+            if (IsDisposed || Disposing) return;
             SetStatus("Error: " + e.Message);
             Log("ERROR: " + e.Message);
         }
         finally
         {
-            foreach (var button in _actionButtons) button.Enabled = true;
+            if (!IsDisposed && !Disposing)
+                foreach (var button in _actionButtons) button.Enabled = true;
             _busy = false;
         }
     }
@@ -923,25 +945,8 @@ public sealed class MainForm : Form
 
     private async Task CheckForUpdatesAsync()
     {
-        Log("Checking latest public Snail Commander release...");
-        var latest = await GitHubUpdates.LatestAsync();
-        if (GitHubUpdates.AlreadyInstalled(latest))
-        {
-            SetStatus("Already running the latest public release.");
-            Log("Already up to date: " + latest.CommitSha[..10]);
-            return;
-        }
-        var answer = MessageBox.Show(this,
-            $"Snail Commander update available: {latest.CommitSha[..10]}.\n\n" +
-            "Download verified release, close Snail Commander, install, then reopen?\n\n" +
-            "Local captures, labels, preferences, and logs are stored outside the app folder.",
-            "Update Snail Commander", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-        if (answer != DialogResult.Yes) { Log("Update cancelled."); return; }
-        SetStatus("Downloading and verifying GitHub release...");
-        var staging = await GitHubUpdates.DownloadAndPrepareAsync(latest);
-        Log("Verified update staged. Exiting to external updater.");
-        GitHubUpdates.LaunchInstallerAndExit(staging);
-        BeginInvoke(new Action(Close));
+        SelectPage("Updates");
+        await RefreshUpdateStatusAsync();
     }
 
     private void SetStatus(string message)
@@ -954,6 +959,8 @@ public sealed class MainForm : Form
         var line = $"[{DateTime.Now:HH:mm:ss}] {message}";
         _overviewLog.AppendText(line + Environment.NewLine);
         _activityLog.AppendText(line + Environment.NewLine);
+        foreach (var view in new[] { _overviewLog, _activityLog })
+            if (view.TextLength > 80_000) view.Text = view.Text[^60_000..];
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(LogFile)!);
@@ -965,6 +972,10 @@ public sealed class MainForm : Form
 
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
+        _lifetime.Cancel();
+        _updateTimer.Stop();
+        _updateTimer.Dispose();
+        SaveWindowBounds();
         _liveTimer.Stop();
         _liveTimer.Dispose();
         _latestImage.Image?.Dispose();

@@ -1,0 +1,40 @@
+{
+  "AccountName": "SYNTHETIC EXAMPLE — invented values, not your game account",
+  "Synthetic": true,
+  "Leadership": 30,
+  "Minions": [
+    {
+      "Id": "example-a", "Name": "Example attacker", "Form": "Demon", "Tier": 1,
+      "Available": 25, "MinionMax": 30, "Deployed": 2, "Healing": 1,
+      "Stats": { "Hp": 100, "Attack": 32, "Defense": 5, "Rush": 4, "ElementalDamage": 6 },
+      "CloneCost": { "example-material": 10 }, "CloneMinutes": 4,
+      "Evidence": { "Kind": "Synthetic", "Source": "Invented fixture; no game-mechanics claim", "Confidence": 1 }
+    },
+    {
+      "Id": "example-b", "Name": "Example defender", "Form": "Angel", "Tier": 1,
+      "Available": 20, "MinionMax": 25, "Healing": 2,
+      "Stats": { "Hp": 350, "Attack": 18, "Defense": 24, "Rush": 3, "ElementalResistance": 10 },
+      "CloneCost": { "example-material": 8 }, "CloneMinutes": 3,
+      "Evidence": { "Kind": "Synthetic", "Source": "Invented fixture; no game-mechanics claim", "Confidence": 1 }
+    },
+    {
+      "Id": "example-c", "Name": "Example swift", "Form": "Mecha", "Tier": 1,
+      "Available": 10, "MinionMax": 15,
+      "Stats": { "Hp": 120, "Attack": 25, "Defense": 10, "Rush": 30, "ElementalDamage": 2 },
+      "CloneCost": { "example-material": 12 }, "CloneMinutes": 6,
+      "Evidence": { "Kind": "Synthetic", "Source": "Invented fixture; no game-mechanics claim", "Confidence": 1 }
+    }
+  ],
+  "Bonuses": [
+    {
+      "Name": "Invented defender group synergy", "TriggerForm": "Angel", "RequiredCount": 10,
+      "PerGroup": true, "MaxStacks": 2, "Percent": { "Attack": 0.15 },
+      "Evidence": { "Kind": "Synthetic", "Source": "Invented fixture; no game-mechanics claim", "Confidence": 1 }
+    },
+    {
+      "Name": "Invented simulation attack bonus", "Mode": "MinionSimulation", "TriggerForm": "Mecha",
+      "TargetForm": "Mecha", "RequiredCount": 5, "Percent": { "Attack": 0.4 },
+      "Evidence": { "Kind": "Synthetic", "Source": "Invented fixture; no game-mechanics claim", "Confidence": 1 }
+    }
+  ]
+}

@@ -1,72 +1,45 @@
 # Snail Commander
 
-**v0.5.1 fixes a header-layout defect that hid the update controls in v0.4/v0.5 on some PCs.** If the update button is missing in your existing installed version, manually download and extract the v0.5.1 release once. Future updates are accessible from the sidebar and header.
+Local Windows command center for Super Snail in BlueStacks. **v0.6.0 adds real local OCR, persistent structured observations, and an initial troop composition optimizer.** It preserves the live preview, screenshot library, preferences, and public GitHub updater.
 
-**v0.5.0 adds automatic read-only LIVE screen capture from BlueStacks.** No refresh/capture clicking is required to see the current emulator screen. The app polls the selected device roughly every two seconds by default (1, 2, 5, or 10 seconds configurable), updates the preview in memory, and tries reconnecting when the ADB connection drops. It auto-archives at most one changed screenshot every 10 minutes; use **Save snapshot** for an extra permanent capture. Pause and resume from either the header or Overview panel. The live stream is **local to this Windows app**: it is not automatically visible to a ChatGPT conversation or a remote AI model.
+[Download the latest Windows release](https://github.com/E7t7t7/SnailCommander/releases/latest)
 
-A local-first **Windows companion** for Super Snail running inside BlueStacks.
+## Use
 
-## v0.5.1 — Always-visible GitHub update button
+1. Extract `SnailCommander-win-x64.zip` into a writable folder and run `SnailCommander.exe`. The self-contained release includes .NET; no GitHub token or AI subscription is needed.
+2. Start BlueStacks with Android Debug Bridge enabled. Snail Commander detects its ADB executable and tries `127.0.0.1:5555`. Change the path, endpoint or selected emulator in **Connection** if needed.
+3. **Overview** shows automatic live capture. Dimensions come from the Android framebuffer; landscape launcher and portrait game screens can differ. Preview runs every 1, 2, 5 or 10 seconds.
+4. **Intelligence** shows OCR text, detected screen, supporting phrases, text boxes and conservatively labeled resource readings. Changed screens are analyzed at most every 10 seconds, with a refresh every 60 seconds for small changes. Analyze the current screen or an image file, inspect saved observations, replay text through current rules, or export JSON.
+5. **Minion Command** imports/edits a local account JSON and calculates ranked compositions for different goals and modes. `samples/minions.empty-account.json` is the starting format. **Load synthetic example** uses invented demonstration data and does not represent your account.
+6. **Updates** checks public releases at startup and every six hours, displays notes, and installs a verified download when selected. Optional automatic downloading never installs without the install action. Failed startup triggers rollback through a separate updater. Backup retention is configurable from 1-10 installations.
 
-The v0.4 release replaces the cramped original diagnostics screen with a dark navigation workspace:
+The application currently observes and analyzes. It does **not** navigate game menus, deploy troops, spend resources, or play unattended. Automatic account/minion extraction, validated combat formulas, local vision-language inference, and seven-day operation remain future work. Rule scores are heuristics, not calibrated probabilities. OCR can misread stylized game text.
 
-- **Overview:** continuously refreshing portrait-friendly game preview, automatic ADB reconnect, refresh-rate dropdown, pause/resume, manual Save snapshot, connection indicators, and recent activity.
-- **Captures:** local screenshot history with timestamps, device details, resolution and manual screen-type labels (Home, Story/Memory, Exploration, Battle, Equipment, Relics, Research, Event, Other).
-- **Connection:** auto-detect ADB on app launch, reconnect BlueStacks, switch between available Android device serials, adjust local endpoint, and remember preferred ADB executable and device.
-- **Activity:** persistent diagnostic logs and accessible log folder.
-- **Update from GitHub:** visible in both the left navigation and top-right header, with a fixed-column layout so Windows display scaling cannot hide it. One-click token-free public GitHub Releases updates. The download is verified against the release asset SHA-256 digest before installation. A separate update worker closes/reopens the app and backs up overwritten files.
+## Local data
 
-**Important:** The application remains **read-only**. It does not tap game controls, manage resources, or play unattended. Saved screen labels are provided by the user—they are not automatically inferred by an AI model yet.
+- Screenshots and manual labels: Windows Pictures directory, `SnailCommander/Captures`.
+- Settings, logs, observation history, account JSON and update backups: `%LOCALAPPDATA%/SnailCommander`.
+- Observations retain up to 3,000 records (512 KB per record limit). Images are not embedded in observation JSON.
+- No screenshots, account inputs or OCR text are sent to cloud inference. Only public release metadata and package downloads use GitHub.
+- Windows OCR requires an installed supported OCR language. English rules work best with the English game UI.
 
-## Install and update
-
-[Download latest release](https://github.com/E7t7t7/SnailCommander/releases/latest)
-
-If using v0.3 already, select **Update GitHub** inside the app. After confirming, the update will download, be verified and installed through a separate worker, and the app will reopen. If the app update has any issue, install the release manually:
-
-1. Download **SnailCommander-win-x64.zip** from the latest release's Assets.
-2. Close Snail Commander.
-3. Extract the ZIP into your existing **writable** application folder, replacing the program files.
-4. Run **SnailCommander.exe**.
-
-No GitHub login, token, .NET runtime or additional AI subscription is required to download and run the self-contained Windows release. Do not run the app directly from the ZIP.
-
-**If you previously generated a token for the old private repository**, use Connection → Remove legacy GitHub token, then [revoke the old token on GitHub](https://github.com/settings/personal-access-tokens).
-
-## Connect BlueStacks
-
-1. Run BlueStacks with Super Snail open. In BlueStacks Settings → Advanced, enable **Android Debug Bridge**.
-2. Start Snail Commander. It will try to detect and connect to a local ADB endpoint automatically.
-3. If it does not connect, go to **Connection**, select the local ADB executable (typically HD-Adb.exe), enter the BlueStacks port (e.g. 127.0.0.1:5555), and click Connect.
-4. Select the correct authorized emulator device in the dropdown.
-5. Go to **Overview** and watch the game appear automatically. No button needed to refresh the view.
-6. Find saved screenshots under your Windows **Pictures/SnailCommander/Captures** folder. Select a file in **Captures** and optionally label the kind of screen.
-
-The desktop emulator window size can differ from the Android framebuffer resolution. Snail Commander reports the actual captured dimensions automatically. It supports portrait and landscape captures.
-
-Screenshots, labels, connection settings, and logs stay on your Windows computer, in your Pictures and %LOCALAPPDATA%/SnailCommander folders. They are not uploaded to GitHub.
-
-## Notes and limitations
-
-- Automatic screen capture is enabled; screen classification still requires manual labels. Image text/OCR and AI interpretation are not implemented yet.
-- ADB permission and emulator availability depend on BlueStacks settings.
-- Week-long unattended gameplay is **not** implemented or verified.
-- Super Snail's published rules restrict gameplay automation; using such automation could risk the account.
+Existing v0.5.1 installations can use **Update from GitHub**. If an older build has no visible update button, download and extract the latest release once.
 
 ## Development
 
-.NET 8 / WinForms, self-contained Windows x64 publish. Public release builds use GitHub Actions.
+Requires .NET 8 SDK on Windows. Restore downloads the Windows SDK projections used by built-in OCR; no third-party inference package is required.
 
-- `src/SnailCommander/MainForm.cs` — desktop workspace and navigation
-- `src/SnailCommander/UiKit.cs` — reusable dark UI controls
-- `src/SnailCommander/CaptureStore.cs` — metadata, labels and local capture history
-- `src/SnailCommander/AdbService.cs` — ADB read-only diagnostics and image capture
-- `src/SnailCommander/GitHubUpdates.cs` — public release updater with SHA-256 validation
-- `src/SnailCommander.Updater/` — separate update worker and rollback
+```powershell
+dotnet build src/SnailCommander/SnailCommander.csproj -c Release
+dotnet build src/SnailCommander.Updater/SnailCommander.Updater.csproj -c Release
+dotnet run --project tests/SnailCommander.Tests/SnailCommander.Tests.csproj -c Release
+```
 
-## Next milestones
+The regression runner exits nonzero on any failed assertion. CI runs it before packaging and publishing. Windows OCR/ADB integration is explicit and separate:
 
-- Read-only screen recognition and OCR evaluation
-- Optional local vision-language model compatibility
-- Account progression analysis and explainable recommendations
-- Saved snapshot comparisons and weekly reports
+```powershell
+dotnet run --project tests/SnailCommander.IntegrationTests -c Release -- --image C:\path\screenshot.png --output artifacts\ocr
+dotnet run --project tests/SnailCommander.IntegrationTests -c Release -- --adb "C:\Program Files\BlueStacks_nxt\HD-Adb.exe" --device 127.0.0.1:5555 --output artifacts\live
+```
+
+See [development status](docs/DEVELOPMENT_STATUS.md), [architecture](docs/ARCHITECTURE.md), [observation](docs/OBSERVATION.md), [troop optimizer](docs/MINION_OPTIMIZER.md), [local inference](docs/LOCAL_INFERENCE.md), and [updater](docs/UPDATER.md).

@@ -3,11 +3,11 @@ name: Windows build
 on:
   push:
     branches: [main]
+    paths-ignore: ['docs/**', 'AGENTS.md', 'README.md']
   pull_request:
     branches: [main]
   workflow_dispatch:
 
-# Prevent parallel pushes from publishing releases out of order.
 concurrency:
   group: windows-build-${{ github.ref }}
   cancel-in-progress: true
@@ -18,6 +18,8 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
+    outputs:
+      version: ${{ steps.metadata.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,11 +27,25 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+      - name: Read application version
+        id: metadata
+        shell: pwsh
+        run: |
+          [xml]$project = Get-Content src/SnailCommander/SnailCommander.csproj
+          $version = [string]$project.Project.PropertyGroup.Version
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Invalid application version: $version" }
+          "version=$version" >> $env:GITHUB_OUTPUT
+      - name: Run deterministic regression suite
+        shell: pwsh
+        run: |
+          dotnet run --project tests/SnailCommander.Tests/SnailCommander.Tests.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Publish self-contained Windows x64 application and updater
         shell: pwsh
         run: |
+          $version = '${{ steps.metadata.outputs.version }}'
           $revision = $env:GITHUB_SHA
-          dotnet publish src/SnailCommander/SnailCommander.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true "-p:InformationalVersion=0.5.1+$revision" -o publish
+          dotnet publish src/SnailCommander/SnailCommander.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true "-p:InformationalVersion=$version+$revision" -o publish
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           dotnet publish src/SnailCommander.Updater/SnailCommander.Updater.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o updater-publish
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -47,9 +63,14 @@ jobs:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
+    concurrency:
+      group: snailcommander-public-release
+      cancel-in-progress: false
     permissions:
       contents: write
     steps:
+      - name: Checkout release notes
+        uses: actions/checkout@v4
       - name: Download compiled Windows build
         uses: actions/download-artifact@v4
         with:
@@ -58,17 +79,37 @@ jobs:
       - name: Package and publish public release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APP_VERSION: ${{ needs.build.outputs.version }}
         shell: bash
         run: |
           set -euo pipefail
           test -f publish/SnailCommander.exe
           test -f publish/SnailCommander.Updater.exe
+          head_sha=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')
+          if [ "$head_sha" != "$GITHUB_SHA" ]; then
+            echo "Skipping obsolete build; main has advanced to $head_sha."
+            exit 0
+          fi
           cd publish
           zip -q -r ../SnailCommander-win-x64.zip .
           cd ..
-          gh release create "build-${GITHUB_SHA}" "SnailCommander-win-x64.zip" \
-            --repo "${GITHUB_REPOSITORY}" \
-            --target "${GITHUB_SHA}" \
-            --title "Snail Commander (build ${GITHUB_SHA:0:10})" \
-            --notes "Read-only BlueStacks companion. Public Windows x64 build from the main branch, commit ${GITHUB_SHA}. No GitHub token required for downloads." \
-            --latest
+          sha256sum SnailCommander-win-x64.zip > SHA256SUMS.txt
+          printf 'Snail Commander v%s, commit %s. Self-contained Windows x64 build; public token-free updates.\n\n' "$APP_VERSION" "$GITHUB_SHA" > release-notes.md
+          awk 'BEGIN { active=0 } /^## / { if (active) exit; active=1 } active { print }' CHANGELOG.md >> release-notes.md
+          tag="build-${GITHUB_SHA}"
+          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$tag" "SnailCommander-win-x64.zip" "SHA256SUMS.txt" \
+              --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "Snail Commander v${APP_VERSION} (build ${GITHUB_SHA:0:10})" \
+              --notes-file release-notes.md --latest=false
+          else
+            # Repair partial release uploads from an interrupted attempt before any Latest promotion.
+            gh release upload "$tag" "SnailCommander-win-x64.zip" "SHA256SUMS.txt" --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit "$tag" --repo "$GITHUB_REPOSITORY" \
+              --title "Snail Commander v${APP_VERSION} (build ${GITHUB_SHA:0:10})" --notes-file release-notes.md
+          fi
+          # Recheck immediately before promotion. Reruns of older commits cannot replace Latest.
+          head_sha=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')
+          if [ "$head_sha" = "$GITHUB_SHA" ]; then
+            gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --latest
+          fi
