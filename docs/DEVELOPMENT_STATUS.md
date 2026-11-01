@@ -2,10 +2,10 @@
 
 ## Session and version
 
-- Application: **0.6.0**. Source baseline audited: `main` at `f1c62c8854183a8b11a4e69627c4ec58966d05fc` (v0.5.1).
+- Application: **0.6.1**. Source baseline audited: `main` at `f1c62c8854183a8b11a4e69627c4ec58966d05fc` (v0.5.1).
 - Source checkout: `source/` inside the user's SnailCommander workspace; the original workspace contained extracted releases, not a Git checkout. Existing installed copies were preserved.
 - Last verified public release before publishing this session: `build-f1c62c8854183a8b11a4e69627c4ec58966d05fc`.
-- New release: pending final GitHub Actions verification. Public release publishing runs automatically on a successful push to `main`; build tags remain `build-<commit>` for existing updater compatibility.
+- Release 0.6.0 (`6979ef846c863cafb6cdcbc9326537879bf2fb9b`) passed CI and published. Download verification caught duplicated SDK revision metadata causing same-build update offers; corrected in 0.6.1, pending final CI verification. Public release publishing runs automatically on a successful push to `main`; build tags remain `build-<commit>` for existing updater compatibility.
 - Session dates: 2026-10-31 to 2026-11-01, America/New_York.
 
 ## Verified working
@@ -30,7 +30,7 @@
 - Baseline Release build: 0 warnings, 0 errors.
 - Updated app Release build: 0 warnings, 0 errors.
 - Updater Release build and self-contained app/updater publish: successful.
-- Deterministic regression runner: **108 assertions, 0 failures**. Covers device parsing, classification/resource parsing, cadence/resolution/device changes, retained persistence/replay, minion constraints/synergies/objectives, bounded search, brute-force comparison, cloning reserves, provenance, digest/path checks, install/rollback/journal/retention, startup nonce acknowledgment.
+- Deterministic regression runner: **113 assertions, 0 failures**. Covers device parsing, classification/resource parsing, cadence/resolution/device changes, retained persistence/replay, minion constraints/synergies/objectives, bounded search, brute-force comparison, cloning reserves, provenance, digest/path checks, install/rollback/journal/retention, startup nonce acknowledgment.
 - Actual BlueStacks integration: started installed Pie64 instance; both `emulator-5554` and `127.0.0.1:5555` connected. Capture from 127.0.0.1:5555 worked.
 - Live landscape launcher: **960 x 540**, 26 OCR regions, `EmulatorHome`, about **240 ms** including persistence/replay checks.
 - Live Super Snail event notice: **540 x 960**, 50 OCR regions, `Events`, about **200-203 ms** including persistence/replay checks. Visible stylized text included OCR mistakes; no text-accuracy or classification-accuracy benchmark is claimed.

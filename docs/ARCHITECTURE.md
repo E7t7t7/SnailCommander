@@ -1,6 +1,6 @@
 # Architecture
 
-## Implemented boundaries (v0.6.0)
+## Implemented boundaries (v0.6.1)
 
 - **Windows shell** (`src/SnailCommander`): WinForms dark UI; live capture and archive; connection/preferences; Intelligence, Minion Command and Updates pages. Partial MainForm files separate feature presentation.
 - **ADB adapter** (`AdbService`): argument-list process execution, finite timeouts, binary PNG validation, 32 MB capture cap, cancelable screenshot operations and authorized-device parsing.

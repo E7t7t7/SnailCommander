@@ -9,6 +9,18 @@ public static class UpdatePolicy
     public const long MaxExpandedBytes = 1200L * 1024 * 1024;
     public const int MaxFiles = 4096;
 
+    public static string CommitFromInformationalVersion(string informationalVersion)
+    {
+        int separator = informationalVersion.LastIndexOf('+');
+        if (separator < 0) return "";
+        // The .NET SDK can append SourceRevisionId even when CI supplies a commit.
+        // Accept repeated identical SHA metadata, but never guess between conflicting SHAs.
+        var commits = informationalVersion[(separator + 1)..].Split('.')
+            .Where(part => part.Length == 40 && part.All(Uri.IsHexDigit))
+            .Select(part => part.ToLowerInvariant()).Distinct(StringComparer.Ordinal).ToArray();
+        return commits.Length == 1 ? commits[0] : "";
+    }
+
     public static string CommitFromTag(string tag)
     {
         if (!tag.StartsWith("build-", StringComparison.Ordinal) || tag.Length != 46 || !tag[6..].All(Uri.IsHexDigit))

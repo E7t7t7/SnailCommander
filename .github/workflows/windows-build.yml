@@ -45,8 +45,10 @@ jobs:
         run: |
           $version = '${{ steps.metadata.outputs.version }}'
           $revision = $env:GITHUB_SHA
-          dotnet publish src/SnailCommander/SnailCommander.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true "-p:InformationalVersion=$version+$revision" -o publish
+          dotnet publish src/SnailCommander/SnailCommander.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeSourceRevisionInInformationalVersion=false "-p:InformationalVersion=$version+$revision" -o publish
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $metadata = (Get-Item publish/SnailCommander.exe).VersionInfo.ProductVersion
+          if ($metadata -ne "$version+$revision") { throw "Unexpected installed-build metadata: $metadata" }
           dotnet publish src/SnailCommander.Updater/SnailCommander.Updater.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o updater-publish
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Copy-Item updater-publish/SnailCommander.Updater.exe publish/SnailCommander.Updater.exe

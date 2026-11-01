@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1 - 2026-11-01
+
+- Fix installed-build detection when the .NET SDK duplicates the source revision in informational-version metadata. Prevent a same-build update loop.
+- Publish explicit version/commit metadata without appending the revision twice; add regression coverage for real release metadata and conflicting revisions.
+
 ## 0.6.0 - 2026-11-01
 
 - Add local Windows OCR with framebuffer text regions, conservative screen classification, heuristic evidence scores, labeled resource extraction and an independent changed-screen cadence.

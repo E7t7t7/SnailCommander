@@ -7,6 +7,11 @@ public static class UpdateTests
     public static void Run(Action<bool, string> assert)
     {
         string first = new('a', 40), second = new('b', 40);
+        assert(UpdatePolicy.CommitFromInformationalVersion("0.6.1+" + first) == first, "Installed build recognizes explicit CI revision");
+        assert(UpdatePolicy.CommitFromInformationalVersion("0.6.0+" + first + "." + first) == first, "Installed build recognizes duplicated SDK source revision");
+        assert(UpdatePolicy.CommitFromInformationalVersion("0.6.1+" + first + "." + second) == "", "Conflicting source revisions stay unknown");
+        assert(UpdatePolicy.CommitFromInformationalVersion("0.6.1") == "", "Local version without revision stays unknown");
+        assert(!UpdatePolicy.IsUpdateAvailable(UpdatePolicy.CommitFromInformationalVersion("0.6.0+" + first + "." + first), new Version(0, 6, 0), first, new Version(0, 6, 0)), "Real SDK metadata cannot trigger a same-build update loop");
         assert(UpdatePolicy.CommitFromTag("build-" + first) == first, "Update build tag accepts full commit");
         assert(Throws<InvalidDataException>(() => UpdatePolicy.CommitFromTag("build-abc")), "Update rejects malformed build tag");
         assert(!UpdatePolicy.IsUpdateAvailable(first, new Version(0, 6, 0), first, new Version(0, 6, 0)), "Exact installed build is not an update");

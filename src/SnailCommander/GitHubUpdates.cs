@@ -28,8 +28,7 @@ internal static class GitHubUpdates
         {
             var info = Assembly.GetExecutingAssembly()
                 .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "";
-            var separator = info.LastIndexOf('+');
-            return separator >= 0 ? info[(separator + 1)..] : "";
+            return UpdatePolicy.CommitFromInformationalVersion(info);
         }
     }
 

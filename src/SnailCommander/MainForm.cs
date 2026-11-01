@@ -57,7 +57,7 @@ public sealed partial class MainForm : Form
 
     public MainForm()
     {
-        Text = "Snail Commander  •  v0.6.0";
+        Text = "Snail Commander  •  v0.6.1";
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(960, 640);
         Size = new Size(1280, 800);
@@ -95,7 +95,7 @@ public sealed partial class MainForm : Form
         UpdateLiveControls();
         LoadCaptureHistory();
         SelectPage("Overview");
-        Log("Snail Commander v0.6.0 launched. Local observation and troop analysis; gameplay execution is not implemented.");
+        Log("Snail Commander v0.6.1 launched. Local observation and troop analysis; gameplay execution is not implemented.");
         Shown += async (_, _) =>
         {
             try { SnailCommander.Core.Updates.StartupHealth.Acknowledge(Environment.GetCommandLineArgs().Skip(1).ToArray()); }
@@ -172,7 +172,7 @@ public sealed partial class MainForm : Form
         state.Dock = DockStyle.Top;
         state.Height = 26;
         sidebarFooter.Controls.Add(state);
-        var version = Theme.TextLabel("v0.6.0   •   Local-first", 9, color: Theme.Secondary);
+        var version = Theme.TextLabel("v0.6.1   •   Local-first", 9, color: Theme.Secondary);
         version.Dock = DockStyle.Top;
         version.Height = 27;
         sidebarFooter.Controls.Add(version);

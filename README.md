@@ -1,6 +1,6 @@
 # Snail Commander
 
-Local Windows command center for Super Snail in BlueStacks. **v0.6.0 adds real local OCR, persistent structured observations, and an initial troop composition optimizer.** It preserves the live preview, screenshot library, preferences, and public GitHub updater.
+Local Windows command center for Super Snail in BlueStacks. **v0.6.1 adds real local OCR, persistent structured observations, and an initial troop composition optimizer.** It preserves the live preview, screenshot library, preferences, and public GitHub updater.
 
 [Download the latest Windows release](https://github.com/E7t7t7/SnailCommander/releases/latest)
 
