@@ -4,7 +4,7 @@
 
 - Application/updater: **0.6.2**, work completed 2026-11-02 (America/New_York).
 - Source checkout: `source/` inside the SnailCommander workspace. Session baseline `c185e8261a0d0eaeb5939e2bfede1d921c1d31ee` matched public main with no user changes.
-- Last verified public release at session start: [v0.6.1](https://github.com/E7t7t7/SnailCommander/releases/tag/build-3f3bebe212a59d17d5f4fbed31b9c40cff245b24). v0.6.2 publication is pending final CI verification; build tags remain `build-<40-character commit>` for existing updater compatibility.
+- Last verified public release at session start: [v0.6.1](https://github.com/E7t7t7/SnailCommander/releases/tag/build-3f3bebe212a59d17d5f4fbed31b9c40cff245b24). v0.6.2 is published as [build-f9511c92f84ceb4a81fa4f5f14d77f61f4fc4c85](https://github.com/E7t7t7/SnailCommander/releases/tag/build-f9511c92f84ceb4a81fa4f5f14d77f61f4fc4c85); [CI passed](https://github.com/E7t7t7/SnailCommander/actions/runs/41564300092), including real updater process and profile checks; build tags remain `build-<40-character commit>` for existing updater compatibility.
 - Existing installed folders, normal preferences, account data and capture history are preserved. This session's GUI/update tests used disposable custom profiles only.
 
 ## Completed this session
@@ -62,3 +62,10 @@ The preceding session verified actual BlueStacks ADB/OCR on `127.0.0.1:5555`: la
 ## Architectural decisions
 
 Preserve .NET 8 WinForms and token-free public updates. Pure observation, strategy and update policies remain in Core; Windows adapters and GUI stay separate. Use bounded flushed atomic JSON observation records until account-wide transactions justify a database. Isolate all test state through explicit local profiles. Persistent history is account memory, not neural training. See ARCHITECTURE.md, OBSERVATION.md, MINION_OPTIMIZER.md, LOCAL_INFERENCE.md and UPDATER.md.
+
+## Delivered release verification
+
+- Current public release: **0.6.2**, source commit `f9511c92f84ceb4a81fa4f5f14d77f61f4fc4c85`. Both GitHub CI jobs succeeded.
+- Downloaded the actual Latest ZIP and verified its GitHub SHA-256 digest: `0374b5e83d8fa1d71de8b5e27ecf4ede8c15a6ddb150239ec83be58a9071e07b`.
+- Actual executable metadata: `0.6.2+f9511c92f84ceb4a81fa4f5f14d77f61f4fc4c85`.
+- Local delivery: `SnailCommander-v0.6.2/SnailCommander.exe` and `SnailCommander-v0.6.2.zip` beside the source checkout. Previous installed versions remain intact.
