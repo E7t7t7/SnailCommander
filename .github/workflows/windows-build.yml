@@ -53,6 +53,26 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Copy-Item updater-publish/SnailCommander.Updater.exe publish/SnailCommander.Updater.exe
           if (!(Test-Path publish/SnailCommander.exe) -or !(Test-Path publish/SnailCommander.Updater.exe)) { throw "Missing updater or app executable." }
+      - name: Test real updater processes and isolated GUI startup
+        shell: pwsh
+        run: |
+          dotnet publish tests/SnailCommander.UpdateProbe/SnailCommander.UpdateProbe.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o artifacts/update-probe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet run --project tests/SnailCommander.UpdateIntegrationTests/SnailCommander.UpdateIntegrationTests.csproj -c Release -- --worker updater-publish/SnailCommander.Updater.exe --probe artifacts/update-probe --gui publish --output artifacts/update-process-tests
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify isolated and default profile paths
+        shell: pwsh
+        run: |
+          dotnet run --project tests/SnailCommander.IntegrationTests/SnailCommander.IntegrationTests.csproj -c Release -- --check-profiles --output artifacts/profile-path-tests
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload updater process test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: updater-process-test-report
+          path: artifacts/update-process-tests/report.json
+          if-no-files-found: warn
+          retention-days: 30
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:

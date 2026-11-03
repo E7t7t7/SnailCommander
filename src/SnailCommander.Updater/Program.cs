@@ -1,12 +1,13 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text;
 using SnailCommander.Core.Updates;
 
 namespace SnailCommander.Updater;
 
 internal static class Program
 {
-    private static readonly string DataDir = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SnailCommander");
+    private static string DataDir = UpdateWorkerOptions.DefaultDataRoot;
 
     private static int Main(string[] args)
     {
@@ -15,21 +16,16 @@ internal static class Program
         Process? replacement = null;
         Mutex? installationLock = null;
         bool ownsLock = false;
+        bool previousExited = false;
+        string? healthPath = null;
         try
         {
-            if (args.Length % 2 != 0) throw new ArgumentException("Updater arguments must be pairs.");
-            var values = new Dictionary<string, string>(StringComparer.Ordinal);
-            for (int i = 0; i < args.Length; i += 2)
-            {
-                if (args[i] is not ("--wait-pid" or "--staging" or "--destination" or "--retain")) throw new ArgumentException("Unexpected updater argument.");
-                values.Add(args[i], args[i + 1]);
-            }
-            if (!values.TryGetValue("--wait-pid", out var pidText) || !int.TryParse(pidText, out var pid) || pid <= 0
-                || !values.TryGetValue("--staging", out var staging) || !values.TryGetValue("--destination", out destination))
-                throw new ArgumentException("Missing updater arguments.");
-            int retention = values.TryGetValue("--retain", out var retain) ? Math.Clamp(int.Parse(retain), 1, 10) : 3;
-            staging = Path.GetFullPath(staging);
-            destination = Path.GetFullPath(destination);
+            var options = UpdateWorkerOptions.Parse(args);
+            int pid = options.WaitPid;
+            int retention = options.Retention;
+            var staging = options.Staging;
+            destination = options.Destination;
+            DataDir = options.DataRoot;
             var exe = Path.Combine(destination, "SnailCommander.exe");
             if (!File.Exists(exe) || !File.Exists(Path.Combine(staging, "SnailCommander.exe"))
                 || !File.Exists(Path.Combine(staging, "SnailCommander.Updater.exe")))
@@ -39,7 +35,13 @@ internal static class Program
                 || string.Equals(staging, destination, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException("Staging and installation must be separate directories.");
 
-            installationLock = new Mutex(false, "Local\\SnailCommander.Update");
+            // Diagnostic installations use an isolated backup/log directory and lock.
+            // Preserve the original mutex for normal clients and older updater versions.
+            string mutexName = "Local\\SnailCommander.Update";
+            if (!DataDir.TrimEnd(Path.DirectorySeparatorChar).Equals(
+                UpdateWorkerOptions.DefaultDataRoot.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase))
+                mutexName += "." + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(DataDir.ToUpperInvariant())))[..16];
+            installationLock = new Mutex(false, mutexName);
             try { ownsLock = installationLock.WaitOne(TimeSpan.Zero); }
             catch (AbandonedMutexException) { ownsLock = true; }
             if (!ownsLock) throw new InvalidOperationException("Another update is already running.");
@@ -51,6 +53,7 @@ internal static class Program
                 if (!previous.WaitForExit(90000)) throw new TimeoutException("The app did not close within 90 seconds; no files were changed.");
             }
             catch (ArgumentException) { }
+            previousExited = true;
 
             var backups = Path.Combine(DataDir, "Backups");
             Directory.CreateDirectory(backups);
@@ -76,14 +79,15 @@ internal static class Program
             var token = Guid.NewGuid().ToString("N");
             var healthRoot = Path.Combine(Path.GetTempPath(), "SnailCommander");
             Directory.CreateDirectory(healthRoot);
-            var healthPath = Path.Combine(healthRoot, "health-" + token + ".ok");
+            healthPath = Path.Combine(healthRoot, "health-" + token + ".ok");
             var start = NewStartInfo(exe);
             start.ArgumentList.Add("--update-health"); start.ArgumentList.Add(healthPath);
             start.ArgumentList.Add("--update-token"); start.ArgumentList.Add(token);
             replacement = Process.Start(start) ?? throw new IOException("Updated application could not start.");
+            Log("Replacement PID: " + replacement.Id);
             var deadline = Stopwatch.StartNew();
             var acknowledged = false;
-            while (deadline.Elapsed < TimeSpan.FromSeconds(45))
+            while (deadline.Elapsed < TimeSpan.FromSeconds(options.HealthTimeoutSeconds))
             {
                 if (replacement.HasExited) throw new IOException("Updated application exited before startup health passed.");
                 try { acknowledged = File.Exists(healthPath) && File.ReadAllText(healthPath) == token; }
@@ -91,10 +95,10 @@ internal static class Program
                 if (acknowledged) break;
                 Thread.Sleep(250);
             }
-            if (!acknowledged) throw new TimeoutException("Updated application did not acknowledge startup within 45 seconds.");
-            if (replacement.WaitForExit(3000)) throw new IOException("Updated application exited immediately after startup.");
+            if (!acknowledged) throw new TimeoutException($"Updated application did not acknowledge startup within {options.HealthTimeoutSeconds} seconds.");
+            Log("Startup acknowledged; verifying grace period.");
+            if (replacement.WaitForExit(options.HealthGraceSeconds * 1000)) throw new IOException("Updated application exited immediately after startup.");
             transaction.Commit();
-            try { File.Delete(healthPath); } catch (Exception cleanup) when (cleanup is IOException or UnauthorizedAccessException) { Log("Health cleanup: " + cleanup.Message); }
             try { UpdateTransaction.PruneHealthyBackups(backups, retention); }
             catch (Exception cleanup) when (cleanup is IOException or UnauthorizedAccessException or InvalidDataException) { Log("Backup retention: " + cleanup.Message); }
             Log("Startup verified; update complete.");
@@ -109,6 +113,11 @@ internal static class Program
             {
                 try { transaction.Rollback(); Log("Restored previous installation."); }
                 catch (Exception restore) { Log("ROLLBACK ERROR: " + restore); return 2; }
+            }
+            // Backup/journal creation can fail before a transaction exists. The old
+            // application has already exited, so reopen its untouched installation too.
+            if (previousExited && transaction?.Status != "healthy")
+            {
                 try { _ = Process.Start(NewStartInfo(Path.Combine(destination!, "SnailCommander.exe"))); }
                 catch (Exception restart) { Log("Restart ERROR: " + restart.Message); }
             }
@@ -116,18 +125,31 @@ internal static class Program
         }
         finally
         {
+            if (healthPath is not null)
+                try { File.Delete(healthPath); }
+                catch (Exception cleanup) when (cleanup is IOException or UnauthorizedAccessException) { Log("Health cleanup: " + cleanup.Message); }
             replacement?.Dispose();
             if (ownsLock) installationLock?.ReleaseMutex();
             installationLock?.Dispose();
         }
     }
 
-    private static ProcessStartInfo NewStartInfo(string exe) => new(exe)
+    private static ProcessStartInfo NewStartInfo(string exe)
     {
-        UseShellExecute = false,
-        WorkingDirectory = Path.GetDirectoryName(exe)!,
-        CreateNoWindow = true
-    };
+        var info = new ProcessStartInfo(exe)
+        {
+            UseShellExecute = false,
+            WorkingDirectory = Path.GetDirectoryName(exe)!,
+            CreateNoWindow = true
+        };
+        if (!DataDir.TrimEnd(Path.DirectorySeparatorChar).Equals(
+            UpdateWorkerOptions.DefaultDataRoot.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase))
+        {
+            info.ArgumentList.Add("--data-root");
+            info.ArgumentList.Add(DataDir);
+        }
+        return info;
+    }
 
     private static void Log(string line)
     {

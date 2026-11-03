@@ -7,6 +7,14 @@ public static class UpdateTests
     public static void Run(Action<bool, string> assert)
     {
         string first = new('a', 40), second = new('b', 40);
+        string[] required = ["--wait-pid", "123", "--staging", Path.Combine(AppContext.BaseDirectory, "staging"), "--destination", Path.Combine(AppContext.BaseDirectory, "installed")];
+        var options = UpdateWorkerOptions.Parse(required);
+        assert(options.Retention == 3 && options.HealthTimeoutSeconds == 45 && options.HealthGraceSeconds == 3, "Existing updater invocation preserves normal health/retention defaults");
+        assert(options.DataRoot == Path.GetFullPath(UpdateWorkerOptions.DefaultDataRoot), "Existing updater invocation preserves production data location");
+        var isolated = UpdateWorkerOptions.Parse(required.Concat(new[] { "--data-root", Path.Combine(AppContext.BaseDirectory, "test-state"), "--health-timeout", "10", "--health-grace", "1", "--retain", "2" }).ToArray());
+        assert(isolated.Retention == 2 && isolated.HealthTimeoutSeconds == 10 && isolated.HealthGraceSeconds == 1 && isolated.DataRoot.EndsWith("test-state"), "Process tests can use isolated state and bounded startup settings");
+        foreach (var invalid in new[] { new[] { "--retain", "0" }, new[] { "--health-timeout", "0" }, new[] { "--health-timeout", "121" }, new[] { "--health-grace", "31" }, new[] { "--unknown", "value" }, new[] { "--wait-pid", "456" }, new[] { "--data-root", "" }, new[] { "--retain" } })
+            assert(Throws<ArgumentException>(() => UpdateWorkerOptions.Parse(required.Concat(invalid).ToArray())), "Updater rejects invalid/duplicate/unbounded options " + string.Join(" ", invalid));
         assert(UpdatePolicy.CommitFromInformationalVersion("0.6.1+" + first) == first, "Installed build recognizes explicit CI revision");
         assert(UpdatePolicy.CommitFromInformationalVersion("0.6.0+" + first + "." + first) == first, "Installed build recognizes duplicated SDK source revision");
         assert(UpdatePolicy.CommitFromInformationalVersion("0.6.1+" + first + "." + second) == "", "Conflicting source revisions stay unknown");

@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>SnailCommander</AssemblyName>
     <RootNamespace>SnailCommander</RootNamespace>
-    <Version>0.6.1</Version>
+    <Version>0.6.2</Version>
     <ApplicationTitle>Snail Commander</ApplicationTitle>
   </PropertyGroup>
   <ItemGroup>

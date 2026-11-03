@@ -1,6 +1,6 @@
 # Architecture
 
-## Implemented boundaries (v0.6.1)
+## Implemented boundaries (v0.6.2)
 
 - **Windows shell** (`src/SnailCommander`): WinForms dark UI; live capture and archive; connection/preferences; Intelligence, Minion Command and Updates pages. Partial MainForm files separate feature presentation.
 - **ADB adapter** (`AdbService`): argument-list process execution, finite timeouts, binary PNG validation, 32 MB capture cap, cancelable screenshot operations and authorized-device parsing.
@@ -11,6 +11,8 @@
 - **External update process** (`SnailCommander.Updater`): waits for app exit, applies staged package, verifies startup and restores on failure. Settings and account data live outside the installation.
 - **Regression runner** (`tests/SnailCommander.Tests`): no test framework dependencies; failed assertions or exceptions yield failure exit code.
 - **Windows integration runner** (`tests/SnailCommander.IntegrationTests`): real PNG/ADB plus Windows OCR, box bounds, persistence/replay and duplicate-screen suppression.
+- **Profile paths** (`AppPaths`): startup-only `--data-root` configuration; default locations remain compatible. Custom profiles isolate captures and state, stay outside the installation, and propagate through updater restart/rollback.
+- **Windows update process runner** (`tests/SnailCommander.UpdateIntegrationTests`): disposable installations, published real worker, fixture child processes and the real GUI; tests the OS process/file-lock/startup/rollback boundaries. `SnailCommander.UpdateProbe` is a test-only executable and is never packaged as the product.
 
 ## Current data flow
 

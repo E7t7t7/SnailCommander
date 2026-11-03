@@ -14,6 +14,7 @@ string? Value(string key)
 try
 {
     string output = Path.GetFullPath(Value("--output") ?? Path.Combine(AppContext.BaseDirectory, "integration-output"));
+    if (args.Contains("--check-profiles")) return ProfilePathTests.Run(output);
     Directory.CreateDirectory(output);
     var observer = new ObservationService(Path.Combine(output, "observations"));
     byte[] png;

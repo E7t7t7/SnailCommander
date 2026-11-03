@@ -8,8 +8,7 @@ namespace SnailCommander;
 
 public sealed partial class MainForm
 {
-    private static readonly string DataDirectory = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SnailCommander");
+    private static string DataDirectory => AppPaths.DataDirectory;
     private readonly CancellationTokenSource _lifetime = new();
     private ObservationService? _observer;
     private readonly TextBox _recognizedText = MakeLog();

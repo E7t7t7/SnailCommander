@@ -19,4 +19,5 @@
 - Release versions, assembly metadata, changelog and release title must agree. Preserve `build-<40 character commit SHA>` tag compatibility with existing clients.
 - Public release downloads must need no token, verify SHA-256 before staging, preserve local data, run an external updater, and support rollback on failed startup.
 - CI must run regression tests before packaging and never mark an obsolete commit as Latest.
+- CI must also pass the real Windows updater process suite and isolated/default profile checks. Use disposable `--data-root` profiles for GUI/update tests; never point a test worker at the user's installed application or normal profile.
 - Keep `docs/DEVELOPMENT_STATUS.md`, `docs/ARCHITECTURE.md` and `CHANGELOG.md` accurate at the end of each session. Record specific next steps and limitations.

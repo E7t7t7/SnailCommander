@@ -51,13 +51,12 @@ public sealed partial class MainForm : Form
     private int _recordCount;
     private string _lastImagePath = "";
 
-    private static readonly string LogFile = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "SnailCommander", "Logs", "session.log");
+    private static string LogFile => Path.Combine(AppPaths.DataDirectory, "Logs", "session.log");
 
     public MainForm()
     {
-        Text = "Snail Commander  •  v0.6.1";
+        Text = $"Snail Commander  •  v{GitHubUpdates.CurrentVersion.ToString(3)}";
+        if (AppPaths.UsesCustomRoot) Text += "  •  " + Path.GetFileName(AppPaths.DataDirectory);
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(960, 640);
         Size = new Size(1280, 800);
@@ -95,7 +94,7 @@ public sealed partial class MainForm : Form
         UpdateLiveControls();
         LoadCaptureHistory();
         SelectPage("Overview");
-        Log("Snail Commander v0.6.1 launched. Local observation and troop analysis; gameplay execution is not implemented.");
+        Log($"Snail Commander v{GitHubUpdates.CurrentVersion.ToString(3)} launched. Local observation and troop analysis; gameplay execution is not implemented.");
         Shown += async (_, _) =>
         {
             try { SnailCommander.Core.Updates.StartupHealth.Acknowledge(Environment.GetCommandLineArgs().Skip(1).ToArray()); }
@@ -172,7 +171,7 @@ public sealed partial class MainForm : Form
         state.Dock = DockStyle.Top;
         state.Height = 26;
         sidebarFooter.Controls.Add(state);
-        var version = Theme.TextLabel("v0.6.1   •   Local-first", 9, color: Theme.Secondary);
+        var version = Theme.TextLabel($"v{GitHubUpdates.CurrentVersion.ToString(3)}   •   Local-first", 9, color: Theme.Secondary);
         version.Dock = DockStyle.Top;
         version.Height = 27;
         sidebarFooter.Controls.Add(version);

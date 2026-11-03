@@ -146,6 +146,11 @@ internal static class GitHubUpdates
         info.ArgumentList.Add(AppContext.BaseDirectory);
         info.ArgumentList.Add("--retain");
         info.ArgumentList.Add(Math.Clamp(retention, 1, 10).ToString(System.Globalization.CultureInfo.InvariantCulture));
+        if (AppPaths.UsesCustomRoot)
+        {
+            info.ArgumentList.Add("--data-root");
+            info.ArgumentList.Add(AppPaths.DataDirectory);
+        }
         _ = Process.Start(info) ?? throw new InvalidOperationException("The update worker could not start; Snail Commander will remain open.");
     }
 }

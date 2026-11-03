@@ -15,9 +15,7 @@ internal sealed record CaptureRecord(
 
 internal sealed class CaptureStore
 {
-    public static readonly string DirectoryPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
-        "SnailCommander", "Captures");
+    public static string DirectoryPath => AppPaths.CapturesDirectory;
 
     public static readonly string[] Labels =
     {
@@ -115,9 +113,7 @@ internal sealed class LocalPreferences
     public bool AutoDownloadUpdates { get; set; }
     public int UpdateBackupRetention { get; set; } = 3;
 
-    private static readonly string FilePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "SnailCommander", "settings.json");
+    private static string FilePath => Path.Combine(AppPaths.DataDirectory, "settings.json");
 
     public static LocalPreferences Load()
     {

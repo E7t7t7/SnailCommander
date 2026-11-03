@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.2 - 2026-11-02
+
+- Reopen the unchanged previous application if update backup creation fails before a transaction can be journaled.
+- Add isolated local profiles with `--data-root`, including settings, captures, observations, account data, logs and update backups; preserve the profile through updater restart and rollback. Normal data locations remain unchanged.
+- Add real Windows updater process tests for successful installation, failed startup, missing acknowledgment, exit during startup grace, mid-copy failure, backup creation failure, and recovery after terminating an updater. Exercise the actual GUI as an installed replacement in an isolated profile.
+- Make the process tests and default/custom profile checks mandatory CI release gates. Keep startup-health timing bounded and clean up attempt-owned health files on failure.
+- Derive displayed application versions from assembly metadata.
+
 ## 0.6.1 - 2026-11-01
 
 - Fix installed-build detection when the .NET SDK duplicates the source revision in informational-version metadata. Prevent a same-build update loop.

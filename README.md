@@ -1,6 +1,6 @@
 # Snail Commander
 
-Local Windows command center for Super Snail in BlueStacks. **v0.6.1 adds real local OCR, persistent structured observations, and an initial troop composition optimizer.** It preserves the live preview, screenshot library, preferences, and public GitHub updater.
+Local Windows command center for Super Snail in BlueStacks. **v0.6.2 strengthens update recovery with real Windows process tests and isolated local profiles.** It includes local OCR, persistent structured observations and a bounded troop composition optimizer, while preserving the live preview and public GitHub updater.
 
 [Download the latest Windows release](https://github.com/E7t7t7/SnailCommander/releases/latest)
 
@@ -25,6 +25,8 @@ The application currently observes and analyzes. It does **not** navigate game m
 
 Existing v0.5.1 installations can use **Update from GitHub**. If an older build has no visible update button, download and extract the latest release once.
 
+For a separate account or a disposable test installation, launch `SnailCommander.exe --data-root "C:\SnailProfiles\AccountTwo"`. Use a directory outside the application installation. All profile data, including captures and updater backups, then lives beneath that directory; the profile name appears in the title. Without this option, existing data locations remain unchanged. Updates and rollback preserve the selected profile. Profiles do not automatically discover another account's state.
+
 ## Development
 
 Requires .NET 8 SDK on Windows. Restore downloads the Windows SDK projections used by built-in OCR; no third-party inference package is required.
@@ -38,8 +40,11 @@ dotnet run --project tests/SnailCommander.Tests/SnailCommander.Tests.csproj -c R
 The regression runner exits nonzero on any failed assertion. CI runs it before packaging and publishing. Windows OCR/ADB integration is explicit and separate:
 
 ```powershell
+dotnet run --project tests/SnailCommander.IntegrationTests -c Release -- --check-profiles --output artifacts\profiles
 dotnet run --project tests/SnailCommander.IntegrationTests -c Release -- --image C:\path\screenshot.png --output artifacts\ocr
 dotnet run --project tests/SnailCommander.IntegrationTests -c Release -- --adb "C:\Program Files\BlueStacks_nxt\HD-Adb.exe" --device 127.0.0.1:5555 --output artifacts\live
 ```
+
+The release workflow also runs the actual updater executable against disposable child processes and the published GUI. See [updater process validation](docs/UPDATER.md) for the reproducible commands and the distinction between process fixtures and live gameplay.
 
 See [development status](docs/DEVELOPMENT_STATUS.md), [architecture](docs/ARCHITECTURE.md), [observation](docs/OBSERVATION.md), [troop optimizer](docs/MINION_OPTIMIZER.md), [local inference](docs/LOCAL_INFERENCE.md), and [updater](docs/UPDATER.md).

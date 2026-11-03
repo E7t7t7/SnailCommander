@@ -38,7 +38,7 @@ Updates exposes a saved backup-retention preference from one to ten previous ins
 
 The **Open update history** button opens the backup folder. A selectable rollback-version dropdown and a complete user-facing manual rollback operation are not implemented yet. Do not present that button as an automatic restore facility.
 
-Temporary downloads, extracted staging directories, copied workers, and failed health files can remain after attempts. Comprehensive temporary-storage cleanup is outstanding. Do not delete a staging directory while its update worker is active.
+Temporary downloads, extracted staging directories, copied workers, can remain after attempts. Comprehensive temporary-storage cleanup is outstanding. Do not delete a staging directory while its update worker is active.
 
 ## CI publication and validation limits
 
@@ -46,4 +46,22 @@ The workflow runs the console regression suite before publishing either executab
 
 Release publication is serialized. The job checks that its commit is still `main` before creating a release, creates it with `--latest=false`, and rechecks `main` immediately before promoting Latest. Reruns repair existing release assets and metadata before promotion. These checks prevent routine stale-build reruns from replacing a newer release, but the branch check and GitHub's Latest update are separate API operations: a concurrent branch change or external release publisher creates a narrow race. This is not an atomic compare-and-set on repository state.
 
-The development session passed 108 regression assertions, including digest rejection, package traversal/duplicate-path rejection, version comparison, journal installation/restoration, simulated mid-copy failure, retention, directory overlap, and health-nonce acknowledgment. These deterministic checks do not constitute a real installed-application update/rollback test. End-to-end updater installation, deliberate startup-failure recovery, and killed-worker recovery still need isolated integration validation.
+The initial release used deterministic regression checks only. v0.6.2 adds real Windows process validation, described below.
+
+## v0.6.2 process integration checks
+
+The Windows release job now requires the process suite and default/custom profile checks before uploading a releasable build. Normal updater clients still use the original data directory, mutex, 45-second health deadline and three-second grace period. Advanced `--data-root`, `--health-timeout` (1-120 seconds), and `--health-grace` (1-30 seconds) options allow isolated diagnostic runs; they are validated before installation. The GUI's `--data-root` profile stays outside its installation and is propagated through update launch, replacement startup and rollback restart.
+
+Local verification on 2026-11-02 passed **124 deterministic assertions, 84 process assertions across eight scenarios, and 12 profile-path assertions**. Process scenarios exercise success, immediate startup exit, missing acknowledgment, exit after acknowledgment during grace, mid-install copy failure, backup-directory creation failure, recovery after killing an awaiting-health worker on the next attempt, and installation of the real published GUI. They verify exit codes, persisted journal states, old-app restart, removal of new files on rollback, preservation of unrelated files/account inputs, and profile-local GUI logs/captures. Process fixtures replace gameplay; the GUI case has preview disabled and uses only a disposable profile.
+
+This validates the actual worker and Windows process/file-copy/rollback boundaries. It does not claim a seven-day soak, an upgrade from every historical binary, interactive click-through of the Update button, or successful recovery after power loss. Killing a worker still requires a later update attempt for journal recovery. All test-created children are stopped only after their executable path is verified to belong to the disposable installation. Passing temporary installations are removed after validating their absolute parent and owner marker; failed evidence is retained locally.
+
+Reproduce after publishing the app and updater to `artifacts/update-gui` and `artifacts/update-worker`:
+
+```powershell
+dotnet publish tests/SnailCommander.UpdateProbe -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o artifacts/update-probe
+dotnet run --project tests/SnailCommander.UpdateIntegrationTests -c Release -- --worker artifacts/update-worker/SnailCommander.Updater.exe --probe artifacts/update-probe --gui artifacts/update-gui --output artifacts/update-process-tests
+dotnet run --project tests/SnailCommander.IntegrationTests -c Release -- --check-profiles --output artifacts/profile-path-tests
+```
+
+Backup creation can fail before an installation journal exists (for example a file occupies the Backups directory path). After the previous app has exited, the worker now reopens its untouched installation even in that case. Attempt-owned health files are cleaned up on both success and failure; downloaded ZIP/staging cleanup remains a separate outstanding task.
