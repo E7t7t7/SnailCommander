@@ -1,38 +1,32 @@
 # Development status
 
-## Current session — 0.8.0 (2026-11-13)
+## Current session — 0.8.1 (2026-11-13)
 
-Baseline public/local main: 2614c5e28d4e221ce6e09dc4da9f3380e061c68f, following the verified 0.7.0 release. No pre-existing worktree changes.
+Baseline public/local main: 1287b6a2e11b1352d6e62b13b9efaaf7a41e69c0, following verified 0.8.0. The clean development checkout was preserved at Games/SnailCommander-Development during the requested release-folder cleanup. Normal application data is unchanged.
 
-Implemented a simpler Home with Start automation, Pause/Resume, Stop, outcome text and live preview. Navigation is Home, Settings, Advanced, Activity and Updates. Existing account evidence, OCR, minion optimizer, captures and preview controls remain under Advanced. A header Stop is available across pages.
+## Implemented
 
-Start now connects to a loopback BlueStacks endpoint, starts the uniquely port-matched installed instance when possible, and opens the fixed Super Snail package. The first real input allowlist covers login Start, free reward OK and explicit update-notice dismissal. Every tap requires live-source/device/package/freshness/bounds/context checks, a second observation, an intent checkpoint and bounded post-action observation. Unknown state and unverified outcomes stop without repeating input. Pause blocks new actions; Stop/close/device changes cancel; updater installation drains the session. Unfinished checkpoints are never replayed. See AUTOMATION.md for exact boundaries and limits.
+- Added Game navigation and a header Game panel button. The full-height panel contains the game image and manual control, Android Back and minimize/show BlueStacks controls.
+- Local screenshot mirroring targets a 500 ms cadence while Game is visible, sharing the existing nonqueuing capture gate and independent OCR cadence. Portrait/landscape frames remain aspect-correct. Images are disposed on replacement.
+- User-directed taps and release-time swipes map through pure Zoom/letterbox geometry. Black borders, stale frames, changed device/orientation and a non-Super-Snail foreground package reject input. A second input waits for a new post-input frame; there are no queued gestures or blind retries.
+- Enabling manual control stops/drains automation. Starting automation or installing an update cancels/drains manual input. Switching away disables it. Closing cancels input and restores a BlueStacks window minimized by this app.
+- Minimize/show works only with one identifiable player window; multiple windows require manual selection/minimization. The emulator keeps running. Process identity is checked before restoration.
+- Preserved existing observation/account evidence, advisory optimizer, bounded automation, updater and profile behavior.
 
 ## Verification
 
-- 212 deterministic assertions passed, including 34 added automation checks for source provenance, stale/future frames, wrong device/package, spending/consent contexts, ambiguity, bounds, login/notice signatures and postconditions.
-- GUI builds passed without warnings/errors. App/updater are version 0.8.0.
-- Windows profile checks passed all 12 assertions with disposable profiles; normal user data was not used for GUI/update tests.
-- The real Windows updater process suite passed all 84 assertions locally and in final release CI. CI also passed all 212 deterministic and 12 profile checks (308 assertions total).
-- Live local test: one Start connected BlueStacks and launched Super Snail from a different foreground game. Pause and Stop were exercised in the GUI.
-- Live input test: one recognized notice-dismissal tap removed the notice. The initial postcondition stayed Unknown and correctly ended without retry. Recognition was then expanded to explicitly identify the login footer/Start transition, covered by a deterministic fixture.
-- Live login test: one recognized Start tap reached a game Login verification failed/Retry dialog. The session correctly stopped with an unverified outcome; it did not retry, spend, or claim login success. Automatic recovery from that error is not implemented.
-- Focused local OCR recognized the live notice and login button. This small sample is not an accuracy benchmark. The free reward branch has policy fixtures and is not claimed live-validated this session.
-- Private real screenshots/OCR, synthetic fixtures generated during integration, logs and all test profiles stay in ignored artifacts. No private account/chat data is included in source publishing.
+- 230 deterministic assertions passed, including 18 new viewport checks for portrait/landscape borders, resize scaling, exact bounds, invalid dimensions and nonfinite coordinates.
+- App builds passed with no warnings/errors. App/updater version is 0.8.1.
+- Live GUI test used only the disposable game-panel-ui profile. The in-app game image continued updating while BlueStacks was minimized. Leaving/reopening Game disabled manual control, and closing restored the minimized BlueStacks window.
+- One tap in the mirrored game image opened the real game's Settings screen. A drag was forwarded; a tap on its return arrow returned to the home screen. No game settings, purchases, upgrades or resource actions were requested during this test. Live interaction is a small manual smoke test, not an unattended gameplay benchmark.
+- Local real updater-process tests passed all 84 assertions and profile checks passed all 12. Final public release verification is recorded below after completion.
 
-## Limits and next work
+## Limits
 
-This is a bounded first automation slice, not a complete player. No facility navigation, arbitrary collection, deployment, cloning, upgrading, purchases, strategic gameplay scheduler, training, seven-day reliability or verified inventory ingestion is implemented. It will need manual help on most gameplay screens. Twelve unsupported observations or an unverified input end the run; twenty verified actions is the session cap.
+This is interactive screenshot mirroring and ADB input forwarding, not native cross-process window embedding or video streaming. Target cadence is about two frames per second and depends on ADB/emulator latency. No keyboard/text, audio, multi-touch, long-press or continuous drag feedback is implemented. It requires BlueStacks with ADB enabled and Super Snail foreground for input. A missing connection is still handled from Home/Settings.
 
-Next priorities: recognize and test the login-failure recovery transition with a strict retry budget; gather labeled private fixtures for successful login/home/reward transitions; add a fake-environment execution harness and interrupted-input recovery tests; then add one verified facility routine at a time. Continue own-account identity and minion-detail validation before inventory ingestion or troop deployment. OCR and heuristic scores remain fallible; local persistence is not neural training.
-
-Updater replacement/rollback, public token-free downloads and SHA-256 validation are preserved. Manual rollback selection, global archive/log cleanup and a seven-day soak remain incomplete. Prior 0.7.0 evidence extraction and advisory optimizer limits still apply; see ACCOUNT_EVIDENCE.md and MINION_OPTIMIZER.md.
+The 0.8.0 bounded automation remains narrow: login Start, free reward OK and explicit update notice dismissal only. Most gameplay, login-error recovery, inventory ingestion, strategic scheduling and seven-day unattended operation remain unfinished. Manual control is separate from these policy rules and follows the user's gestures. OCR/evidence/optimizer limits still apply; persistence is not neural training.
 
 ## Release delivery
 
-- Published code commit: 104ef5e981efa1ddd9c60f000c79a222663459d1.
-- Public release: [v0.8.0](https://github.com/E7t7t7/SnailCommander/releases/tag/build-104ef5e981efa1ddd9c60f000c79a222663459d1).
-- [CI 43463393665](https://github.com/E7t7t7/SnailCommander/actions/runs/43463393665): both build and publish-release succeeded; 308 assertions passed before packaging.
-- Downloaded the actual public ZIP, 102007051 bytes, and matched GitHub SHA-256: 5ef063b90b93d2fd00b9c2af1bec4239dee409c77050a465efeae06a620248f4.
-- Extracted beside the source checkout to SnailCommander-v0.8.0/SnailCommander.exe; ZIP retained as SnailCommander-v0.8.0.zip. Existing versions and normal profile data remain intact.
-- Verified executable ProductVersion exactly 0.8.0+104ef5e981efa1ddd9c60f000c79a222663459d1.
+Pending final release verification. Existing 0.8.0 delivery remains available until 0.8.1 is verified. Keep the release folder tidy with the current app folder, current ZIP and immediately previous ZIP for rollback; development files stay outside it.

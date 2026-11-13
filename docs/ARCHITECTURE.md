@@ -1,6 +1,6 @@
 # Architecture
 
-## Implemented boundaries (v0.8.0)
+## Implemented boundaries (v0.8.1)
 
 - **Windows shell** (`src/SnailCommander`): WinForms dark UI; live capture and archive; connection/preferences; Intelligence, Minion Command and Updates pages. Partial MainForm files separate feature presentation.
 - **ADB adapter** (`AdbService`): argument-list process execution, finite timeouts, binary PNG validation, 32 MB capture cap, cancelable screenshot operations and authorized-device parsing.
@@ -16,6 +16,8 @@
 - **Windows update process runner** (`tests/SnailCommander.UpdateIntegrationTests`): disposable installations, published real worker, fixture child processes and the real GUI; tests the OS process/file-lock/startup/rollback boundaries. `SnailCommander.UpdateProbe` is a test-only executable and is never packaged as the product.
 
 - **Automation policy** (`SnailCommander.Core/Automation`): explicit input allowlist, live-source/freshness/device/package/target checks and conservative postconditions. `MainForm.Automation` orchestrates cancelable bounded sessions, bootstrap, preflight, input, verification and local checkpointing. `AutomationButtonReader` performs focused OCR without adding crops to account state. See AUTOMATION.md.
+
+- **In-app game panel** (`MainForm.GamePanel`): a second bounded live picture view, manual tap/swipe/Back, source-age/device/foreground gates, capture/input serialization and cancellation handoff. `Core/Interaction/GameViewport` maps Zoom coordinates and rejects letterboxing. BlueStacks stays a separate process and may be minimized/restored through a uniquely selected native window; no cross-process reparenting is used.
 
 ## Current data flow
 

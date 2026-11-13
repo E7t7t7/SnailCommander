@@ -1,4 +1,4 @@
-# Bounded automation (0.8.0)
+# Bounded automation (0.8.1)
 
 Home has Start automation, Pause/Resume, and Stop. A second Stop remains in the header on every page. Settings contains connection details; Advanced retains Account, Intelligence, Minion Command, captures and preview controls. Preview pause is independent of automation pause.
 
@@ -21,3 +21,9 @@ Twelve unsupported observations end the run with Needs attention; at least five 
 This is not a complete autonomous player or seven-day scheduler. It does not navigate facilities, deploy troops, collect arbitrary resources, clone, upgrade, plan events, solve challenges, spend currency, or purchase anything. Unsupported screens require manual intervention and another Start. OCR coverage remains limited and no accuracy percentage or unattended-duration claim is made.
 
 Validation: deterministic policy fixtures are synthetic. The integration runner supports `--check-automation-recognition` with either its existing `--adb`/`--device` or `--image` inputs. It performs local OCR and writes a local report without input; imported files remain ineligible to act. Real game screenshots and OCR reports remain ignored under artifacts and must not be published.
+
+## In-app game control
+
+Game is a full-height live ADB image inside the GUI, refreshed at a 500 ms target cadence while visible. Actual refresh depends on screenshot latency; capture remains nonqueuing. Enable manual control to tap or drag; Android Back sends the Android Back key. Mouse coordinates map to the Android framebuffer through the exact Zoom/letterbox geometry. Black borders, stale frames older than two seconds, changed device/orientation and a foreground package other than Super Snail cannot send input. One input is in flight at a time; another needs a post-input frame. Inputs are user-directed, not additional automation policy rules, and are never retried automatically. Keyboard/text entry, audio, multi-touch and continuous video are not supported.
+
+Enabling manual control stops/drains automation. Automation startup, leaving the Game page and update installation disable/drain manual control. Closing cancels input. Minimize / show BlueStacks operates only when one BlueStacks player window can be identified, otherwise it asks the user to minimize the intended instance manually. It does not kill the emulator. A window minimized by Snail Commander is restored on exit; PID/start-time checks prevent restoring an unrelated reused process. This is local mirroring with input forwarding, not a native BlueStacks window embedded by SetParent.

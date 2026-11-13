@@ -76,6 +76,7 @@ public sealed partial class MainForm : Form
         BuildAccountEvidence();
         BuildUpdates();
         BuildAdvanced();
+        BuildGamePanel();
         RestoreWindowBounds();
 
         _adbPath.Text = File.Exists(_preferences.AdbPath)
@@ -189,7 +190,7 @@ public sealed partial class MainForm : Form
         sidebar.Controls.Add(navStack, 0, 1);
         foreach (var (name, glyph) in new[]
         {
-            ("Overview", "◉"), ("Connection", "⌁"), ("Advanced", "◇"), ("Activity", "≡"), ("Updates", "↻")
+            ("Overview", "◉"), ("Game", "▣"), ("Connection", "⌁"), ("Advanced", "◇"), ("Activity", "≡"), ("Updates", "↻")
         })
         {
             var button = new ModernButton($"   {glyph}   {(name == "Overview" ? "Home" : name == "Connection" ? "Settings" : name)}")
@@ -243,8 +244,8 @@ public sealed partial class MainForm : Form
         _pageTitle.Dock = DockStyle.Fill;
         header.Controls.Add(_pageTitle, 0, 0);
 
-        var capture = new ModernButton("Home", true);
-        capture.Click += (_, _) => SelectPage("Overview");
+        var capture = new ModernButton("Game panel", true);
+        capture.Click += (_, _) => SelectPage("Game");
         capture.Dock = DockStyle.Fill;
         header.Controls.Add(capture, 1, 0);
 
@@ -280,7 +281,7 @@ public sealed partial class MainForm : Form
         var previewCard = new SurfacePanel();
         previewCard.Dock = DockStyle.Fill;
         var previewGrid = Theme.Table((SizeType.Absolute, 37), (SizeType.Percent, 100), (SizeType.Absolute, 39));
-        previewGrid.Controls.Add(Theme.TextLabel("LIVE BLUESTACKS VIEW", 10, true, Theme.Accent), 0, 0);
+        previewGrid.Controls.Add(Theme.TextLabel("LIVE PREVIEW • OPEN GAME TO CONTROL", 10, true, Theme.Accent), 0, 0);
         previewGrid.Controls.Add(_latestImage, 0, 1);
         previewGrid.Controls.Add(_overviewCaption, 0, 2);
         previewCard.Controls.Add(previewGrid);
@@ -471,6 +472,9 @@ public sealed partial class MainForm : Form
 
     private void SelectPage(string name)
     {
+        if (name != "Game" && _gameControlEnabled) _ = StopManualControlAsync();
+        int interval = _preferences.LiveIntervalSeconds;
+        _liveTimer.Interval = name == "Game" ? 500 : (interval is 1 or 2 or 5 or 10 ? interval : 2) * 1000;
         _pageHost.SuspendLayout();
         foreach (var (pageName, page) in _pages) page.Visible = pageName == name;
         var active = _pages[name];
@@ -590,6 +594,7 @@ public sealed partial class MainForm : Form
             var previous = _latestImage.Image;
             _latestImage.Image = replacement;
             previous?.Dispose();
+            PresentGameFrame(replacement, frameDevice);
 
             _lastImagePath = "<live-preview>";
             _resolutionMetric.Text = $"{replacement.Width} × {replacement.Height}";
@@ -959,6 +964,8 @@ public sealed partial class MainForm : Form
 
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
+        _gameControlCancellation?.Cancel();
+        RestoreEmulatorWindow();
         _automationCancellation?.Cancel();
         _lifetime.Cancel();
         _accountAgeTimer.Stop();
@@ -970,6 +977,7 @@ public sealed partial class MainForm : Form
         _liveTimer.Dispose();
         _latestImage.Image?.Dispose();
         _archiveImage.Image?.Dispose();
+        _gameImage.Image?.Dispose();
         base.OnFormClosed(e);
     }
 }

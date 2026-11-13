@@ -25,12 +25,15 @@ public sealed partial class MainForm
         panel.Controls.Add(_startAutomation, 0, 1);
         panel.Controls.Add(TwoButtons(_pauseAutomation, _stopAutomation), 0, 2);
         panel.Controls.Add(_automationStatus, 0, 3);
-        var capabilities = Theme.TextLabel("Connects to BlueStacks and opens Super Snail. Handles recognized Start, free reward OK, and update notices.\n\nOther gameplay needs your attention. No spending, upgrading, or cloning routines yet.\n\nPause stops new actions. Stop cancels the run. Use Advanced for OCR, account evidence, and troop planning.", 10, color: Theme.Secondary);
+        var capabilities = Theme.TextLabel("Open Game to play inside this window; BlueStacks can stay minimized. Automation handles recognized Start, free reward OK, and update notices.\n\nOther gameplay needs your attention. No spending, upgrading, or cloning routines yet.\n\nPause stops new actions. Stop cancels the run. Use Advanced for OCR, account evidence, and troop planning.", 10, color: Theme.Secondary);
         capabilities.TextAlign = ContentAlignment.TopLeft;
         panel.Controls.Add(capabilities, 0, 4);
-        _startAutomation.Click += (_, _) =>
+        _startAutomation.Click += async (_, _) =>
         {
             if (AutomationActive || _busy) return;
+            _startAutomation.Enabled = false;
+            await StopManualControlAsync();
+            if (IsDisposed || Disposing) return;
             _automationCancellation?.Dispose();
             _automationCancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
             _automationPaused = false;

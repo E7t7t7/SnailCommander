@@ -1,6 +1,6 @@
 # Snail Commander
 
-Local Windows command center for Super Snail in BlueStacks. **v0.8.0 adds a simpler Home screen and one-button bounded automation.** It includes local OCR, account evidence, troop planning, isolated profiles and process-tested public updating.
+Local Windows command center for Super Snail in BlueStacks. **v0.8.1 adds an interactive Game panel inside the GUI.** It includes local OCR, account evidence, troop planning, isolated profiles and process-tested public updating.
 
 [Download the latest Windows release](https://github.com/E7t7t7/SnailCommander/releases/latest)
 
@@ -8,10 +8,11 @@ Local Windows command center for Super Snail in BlueStacks. **v0.8.0 adds a simp
 
 1. Extract `SnailCommander-win-x64.zip` into a writable folder and run `SnailCommander.exe`. The self-contained release includes .NET; no GitHub token or AI subscription is needed.
 2. On **Home**, press **Start automation**. It connects to the configured BlueStacks instance, starts it when its local configuration can be matched, and opens Super Snail. ADB must be enabled in BlueStacks. Adjust unusual installations under **Settings**.
-3. Use **Pause/Resume** to suspend new actions or **Stop** to cancel. Stop is also available in the header on every page.
-4. This first automation release handles recognized login Start, free reward OK, and update notices. It rechecks the screen before input and verifies the result. Unknown screens or unverified outcomes end with **Needs attention**, without repeating the tap. Continue manually and press Start again.
-5. **Advanced** retains Account evidence, Intelligence/OCR, Minion Command, captures and preview controls. Troop optimization remains advisory and uses your local account JSON. Synthetic examples are demonstration data.
-6. **Updates** checks public releases and installs verified packages with external replacement and rollback. No token or subscription is required.
+3. Open **Game** (or **Game panel** in the header), enable manual control, and click/drag directly in the live game image. **Minimize / show BlueStacks** keeps the emulator out of the way. It continues running in the background. The view refreshes at roughly two frames per second, not video frame rates. Manual control stops automation; switching away disables manual input.
+4. Use **Pause/Resume** to suspend new actions or **Stop** to cancel. Stop is also available in the header on every page.
+5. This first automation release handles recognized login Start, free reward OK, and update notices. It rechecks the screen before input and verifies the result. Unknown screens or unverified outcomes end with **Needs attention**, without repeating the tap. Continue manually and press Start again.
+6. **Advanced** retains Account evidence, Intelligence/OCR, Minion Command, captures and preview controls. Troop optimization remains advisory and uses your local account JSON. Synthetic examples are demonstration data.
+7. **Updates** checks public releases and installs verified packages with external replacement and rollback. No token or subscription is required.
 
 **It does not run every game system yet.** Facility navigation, deployment, cloning, upgrades, spending, persistent scheduling and seven-day operation remain unfinished. See [automation behavior and limits](docs/AUTOMATION.md). Partial account evidence does not automatically populate optimizer inventory; see [account evidence](docs/ACCOUNT_EVIDENCE.md).
 

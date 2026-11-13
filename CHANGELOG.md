@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.1 - 2026-11-13
+
+- Add a full-height Game panel inside the GUI with local live mirroring, manual taps/drags, Android Back, and a minimize/restore BlueStacks button. BlueStacks can run minimized while the game is used inside Snail Commander.
+- Map clicks through portrait/landscape letterboxing and ignore black-border clicks. Reject stale frames, changed devices and other foreground apps; serialize manual input with capture and require another frame before the next gesture.
+- Stop and drain automation before enabling manual input; cancel/drain manual input before automation or update installation. Leaving Game disables manual control; closing restores a BlueStacks window minimized by this app.
+- Add deterministic coordinate-mapping regression checks. The panel is a bounded ADB screenshot view, not native window reparenting or high-frame-rate video; keyboard/text/audio controls are not implemented.
+
 ## 0.8.0 - 2026-11-13
 
 - Simplify navigation to Home, Settings, Advanced, Activity and Updates. Put Start automation, Pause/Resume, Stop and the current outcome on Home; keep an emergency Stop in the header. Preserve advanced tools and preview controls.
