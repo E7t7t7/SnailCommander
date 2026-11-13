@@ -13,7 +13,7 @@ Start now connects to a loopback BlueStacks endpoint, starts the uniquely port-m
 - 212 deterministic assertions passed, including 34 added automation checks for source provenance, stale/future frames, wrong device/package, spending/consent contexts, ambiguity, bounds, login/notice signatures and postconditions.
 - GUI builds passed without warnings/errors. App/updater are version 0.8.0.
 - Windows profile checks passed all 12 assertions with disposable profiles; normal user data was not used for GUI/update tests.
-- The existing real Windows updater process suite passed all 84 assertions against the initial 0.8.0 package. Final package/CI verification is recorded below when complete.
+- The real Windows updater process suite passed all 84 assertions locally and in final release CI. CI also passed all 212 deterministic and 12 profile checks (308 assertions total).
 - Live local test: one Start connected BlueStacks and launched Super Snail from a different foreground game. Pause and Stop were exercised in the GUI.
 - Live input test: one recognized notice-dismissal tap removed the notice. The initial postcondition stayed Unknown and correctly ended without retry. Recognition was then expanded to explicitly identify the login footer/Start transition, covered by a deterministic fixture.
 - Live login test: one recognized Start tap reached a game Login verification failed/Retry dialog. The session correctly stopped with an unverified outcome; it did not retry, spend, or claim login success. Automatic recovery from that error is not implemented.
@@ -30,4 +30,9 @@ Updater replacement/rollback, public token-free downloads and SHA-256 validation
 
 ## Release delivery
 
-Final release verification pending publication. Previous release 0.7.0 remains intact locally and publicly until the 0.8.0 CI release completes.
+- Published code commit: 104ef5e981efa1ddd9c60f000c79a222663459d1.
+- Public release: [v0.8.0](https://github.com/E7t7t7/SnailCommander/releases/tag/build-104ef5e981efa1ddd9c60f000c79a222663459d1).
+- [CI 43463393665](https://github.com/E7t7t7/SnailCommander/actions/runs/43463393665): both build and publish-release succeeded; 308 assertions passed before packaging.
+- Downloaded the actual public ZIP, 102007051 bytes, and matched GitHub SHA-256: 5ef063b90b93d2fd00b9c2af1bec4239dee409c77050a465efeae06a620248f4.
+- Extracted beside the source checkout to SnailCommander-v0.8.0/SnailCommander.exe; ZIP retained as SnailCommander-v0.8.0.zip. Existing versions and normal profile data remain intact.
+- Verified executable ProductVersion exactly 0.8.0+104ef5e981efa1ddd9c60f000c79a222663459d1.
