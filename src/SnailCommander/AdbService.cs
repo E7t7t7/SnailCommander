@@ -4,7 +4,7 @@ using SnailCommander.Core.Devices;
 namespace SnailCommander;
 
 /// <summary>
-/// Read-only ADB diagnostics and screen capture; no tapping, swiping or game interaction.
+/// ADB diagnostics, capture, and fixed automation commands. No shell command interpolation.
 /// </summary>
 internal static class AdbService
 {
@@ -101,10 +101,13 @@ internal static class AdbService
         }
     }
 
-    private static async Task<string> RunTextAsync(string adb, params string[] arguments)
+    internal static Task<string> RunTextAsync(string adb, params string[] arguments) => RunCancelableAsync(adb, CancellationToken.None, arguments);
+
+    internal static async Task<string> RunCancelableAsync(string adb, CancellationToken ct, params string[] arguments)
     {
         using var process = Start(adb, arguments);
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(TimeSpan.FromSeconds(20));
         var stdoutTask = process.StandardOutput.ReadToEndAsync();
         var stderrTask = process.StandardError.ReadToEndAsync();
 
@@ -115,6 +118,7 @@ internal static class AdbService
         catch (OperationCanceledException)
         {
             Terminate(process);
+            ct.ThrowIfCancellationRequested();
             throw new TimeoutException("ADB command timed out after 20 seconds.");
         }
 

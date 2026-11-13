@@ -80,7 +80,7 @@ public sealed partial class MainForm
             if (origin == ObservationOrigin.LiveAdb) _ = RefreshAccountEvidenceAsync();
             _quickStatus.Text = $"{result.Classification.Kind} • rule score {result.Classification.Confidence:P0}\n" +
                 $"{result.Elements.Count} text regions • {result.OcrLanguage}\n" +
-                "Local OCR every 10s on changed screens; refresh every 60s. Gameplay execution is not implemented.";
+                "Local OCR every 10s on changed screens; refresh every 60s. Use Home to start bounded automation.";
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
         catch (Exception ex)

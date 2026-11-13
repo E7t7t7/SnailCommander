@@ -40,6 +40,18 @@ try
     else throw new ArgumentException("Specify --image <path> or --adb <path> --device <serial>.");
     var watch = Stopwatch.StartNew();
     var observation = await observer.ObserveAsync(png, device, true, origin: origin) ?? throw new Exception("No OCR result.");
+    if (args.Contains("--check-automation-recognition"))
+    {
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        var recognized = await AutomationButtonReader.ReadAsync(png, observation, deadline.Token);
+        using var memory = new MemoryStream(png);
+        using var bitmap = new System.Drawing.Bitmap(memory);
+        var plan = SnailCommander.Core.Automation.AutomationPolicy.Plan(recognized,
+            SnailCommander.Core.Automation.AutomationPolicy.GamePackage, device, DateTimeOffset.UtcNow);
+        Console.WriteLine($"Automation recognition only (no input): {AutomationButtonReader.Candidates(bitmap).Count} button candidates; action {plan?.Action.ToString() ?? "none"}; {recognized.Elements.Count} regions.");
+        await File.WriteAllTextAsync(Path.Combine(output, "automation-recognition.json"), JsonSerializer.Serialize(new { observation.Id, plan, recognized.Elements }));
+        return 0;
+    }
     if (observation.Width <= 0 || observation.Height <= 0 || observation.Elements.Count == 0)
         throw new Exception("OCR did not produce dimensions and readable text regions.");
     if (observation.Elements.Any(e => e.X < 0 || e.Y < 0 || e.X + e.Width > observation.Width + 1 || e.Y + e.Height > observation.Height + 1))

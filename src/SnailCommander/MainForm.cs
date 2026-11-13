@@ -5,7 +5,7 @@ namespace SnailCommander;
 
 /// <summary>
 /// Local observation, OCR, and advisory troop analysis workspace.
-/// No gameplay taps, swipes, in-game spending, or automated gameplay.
+/// Includes bounded, locally verified login and free reward automation.
 /// </summary>
 public sealed partial class MainForm : Form
 {
@@ -26,7 +26,7 @@ public sealed partial class MainForm : Form
     private readonly List<Button> _actionButtons = new();
     private readonly Panel _pageHost = new() { Dock = DockStyle.Fill, BackColor = Theme.Background };
     private readonly Label _pageTitle = Theme.TextLabel("Overview", 21, true);
-    private readonly Label _footer = Theme.TextLabel("Ready • Read-only observation mode", 9, color: Theme.Secondary);
+    private readonly Label _footer = Theme.TextLabel("Ready • Press Start automation", 9, color: Theme.Secondary);
     private readonly Label _deviceMetric = Theme.TextLabel("Not connected", 15, true);
     private readonly Label _captureMetric = Theme.TextLabel("None yet", 15, true);
     private readonly Label _resolutionMetric = Theme.TextLabel("—", 15, true);
@@ -75,6 +75,7 @@ public sealed partial class MainForm : Form
         BuildMinionCommand();
         BuildAccountEvidence();
         BuildUpdates();
+        BuildAdvanced();
         RestoreWindowBounds();
 
         _adbPath.Text = File.Exists(_preferences.AdbPath)
@@ -95,7 +96,7 @@ public sealed partial class MainForm : Form
         UpdateLiveControls();
         LoadCaptureHistory();
         SelectPage("Overview");
-        Log($"Snail Commander v{GitHubUpdates.CurrentVersion.ToString(3)} launched. Local observation and troop analysis; gameplay execution is not implemented.");
+        Log($"Snail Commander v{GitHubUpdates.CurrentVersion.ToString(3)} launched. Local observation, troop analysis, and bounded automation ready.");
         Shown += async (_, _) =>
         {
             try { SnailCommander.Core.Updates.StartupHealth.Acknowledge(Environment.GetCommandLineArgs().Skip(1).ToArray()); }
@@ -168,7 +169,7 @@ public sealed partial class MainForm : Form
         sidebar.Controls.Add(brand, 0, 0);
 
         var sidebarFooter = new Panel { Dock = DockStyle.Bottom, Height = 78 };
-        var state = Theme.TextLabel("●  READ ONLY", 9, true, Theme.Accent);
+        var state = Theme.TextLabel("●  LOCAL AUTOMATION", 9, true, Theme.Accent);
         state.Dock = DockStyle.Top;
         state.Height = 26;
         sidebarFooter.Controls.Add(state);
@@ -188,13 +189,10 @@ public sealed partial class MainForm : Form
         sidebar.Controls.Add(navStack, 0, 1);
         foreach (var (name, glyph) in new[]
         {
-            ("Overview", "◉"), ("Captures", "▣"),
-            ("Intelligence", "◇"), ("Minion Command", "♟"),
-            ("Account", "◎"),
-            ("Connection", "⌁"), ("Activity", "≡"), ("Updates", "↻")
+            ("Overview", "◉"), ("Connection", "⌁"), ("Advanced", "◇"), ("Activity", "≡"), ("Updates", "↻")
         })
         {
-            var button = new ModernButton($"   {glyph}   {name}")
+            var button = new ModernButton($"   {glyph}   {(name == "Overview" ? "Home" : name == "Connection" ? "Settings" : name)}")
             {
                 Width = 184, Height = 49,
                 TextAlign = ContentAlignment.MiddleLeft,
@@ -245,11 +243,12 @@ public sealed partial class MainForm : Form
         _pageTitle.Dock = DockStyle.Fill;
         header.Controls.Add(_pageTitle, 0, 0);
 
-        var capture = MakeLiveToggle("Pause live preview", true);
+        var capture = new ModernButton("Home", true);
+        capture.Click += (_, _) => SelectPage("Overview");
         capture.Dock = DockStyle.Fill;
         header.Controls.Add(capture, 1, 0);
 
-        var update = MakeButton("Update from GitHub", CheckForUpdatesAsync);
+        var update = _headerStop;
         update.Dock = DockStyle.Fill;
         header.Controls.Add(update, 2, 0);
 
@@ -288,33 +287,10 @@ public sealed partial class MainForm : Form
         body.Controls.Add(previewCard, 0, 0);
 
         var quickCard = new SurfacePanel { Dock = DockStyle.Fill, AutoScroll = true };
-        var quick = Theme.Table(
-            (SizeType.Absolute, 32),
-            (SizeType.Absolute, 35),
-            (SizeType.Absolute, 23),
-            (SizeType.Absolute, 38),
-            (SizeType.Absolute, 32),
-            (SizeType.Absolute, 38),
-            (SizeType.Absolute, 43),
-            (SizeType.Absolute, 39),
-            (SizeType.Absolute, 38),
-            (SizeType.Percent, 100));
-        quick.Controls.Add(Theme.TextLabel("LIVE CONTROL", 11, true), 0, 0);
-        quick.Controls.Add(_liveLabel, 0, 1);
-        quick.Controls.Add(Theme.TextLabel("CONNECTED DEVICE", 9, true, Theme.Secondary), 0, 2);
-        quick.Controls.Add(_devicesQuick, 0, 3);
-        quick.Controls.Add(Theme.TextLabel("PREVIEW REFRESH RATE", 9, true, Theme.Secondary), 0, 4);
-        quick.Controls.Add(_liveSpeed, 0, 5);
-        quick.Controls.Add(MakeLiveToggle("Pause live preview", true), 0, 6);
-        quick.Controls.Add(MakeButton("Save snapshot", CaptureAsync), 0, 7);
-        quick.Controls.Add(MakeButton("Reconnect devices", ExecuteConnectAsync), 0, 8);
-        var tip = _quickStatus;
-        tip.Text = "Local OCR starts automatically with the live preview. Open Intelligence for screen evidence and recognized text.";
-        tip.TextAlign = ContentAlignment.TopLeft;
-        tip.Padding = new Padding(0, 12, 0, 0);
-        quick.Controls.Add(tip, 0, 9);
+        var quick = Theme.Table((SizeType.Absolute, 32), (SizeType.Absolute, 55), (SizeType.Absolute, 48), (SizeType.Absolute, 115), (SizeType.Percent, 100));
+        BuildAutomationControls(quick);
         quick.Dock = DockStyle.Top;
-        quick.Height = 470;
+        quick.Height = 530;
         quickCard.Controls.Add(quick);
         body.Controls.Add(quickCard, 1, 0);
 
@@ -507,7 +483,7 @@ public sealed partial class MainForm : Form
         }
         _pageTitle.Text = name switch
         {
-            "Overview" => "Command overview",
+            "Overview" => "Home",
             "Captures" => "Capture library",
             "Connection" => "Connection settings",
             "Activity" => "Activity & diagnostics",
@@ -622,7 +598,7 @@ public sealed partial class MainForm : Form
             _liveLabel.ForeColor = Theme.Accent;
             _liveFailureCount = 0;
             _lastLiveFailure = "";
-            _ = ObserveFrameAsync(png, frameDevice);
+            if (!AutomationActive) _ = ObserveFrameAsync(png, frameDevice);
 
             if (DateTime.UtcNow - _lastArchive >= TimeSpan.FromMinutes(10))
             {
@@ -812,6 +788,7 @@ public sealed partial class MainForm : Form
     private void SyncDevice(ComboBox source)
     {
         if (_syncingDevices || source.SelectedItem is not string serial) return;
+        if (serial != _selectedDevice) _automationCancellation?.Cancel();
         _syncingDevices = true;
         try
         {
@@ -982,6 +959,7 @@ public sealed partial class MainForm : Form
 
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
+        _automationCancellation?.Cancel();
         _lifetime.Cancel();
         _accountAgeTimer.Stop();
         _accountAgeTimer.Dispose();

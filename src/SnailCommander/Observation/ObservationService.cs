@@ -123,7 +123,7 @@ public sealed class ObservationService
         return (image.Width, image.Height, pixels);
     }
 
-    private static async Task<(string Text, string Language, IReadOnlyList<TextElement> Elements, double Scale)> RecognizeAsync(
+    internal static async Task<(string Text, string Language, IReadOnlyList<TextElement> Elements, double Scale)> RecognizeAsync(
         byte[] png, int originalWidth, int originalHeight, double maximumScale, CancellationToken ct)
     {
         // Prefer English for the supported text rules; use another installed OCR language if necessary.

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.0 - 2026-11-13
+
+- Simplify navigation to Home, Settings, Advanced, Activity and Updates. Put Start automation, Pause/Resume, Stop and the current outcome on Home; keep an emergency Stop in the header. Preserve advanced tools and preview controls.
+- Add one-button local BlueStacks connection/instance startup and fixed-package Super Snail launch.
+- Add bounded, package/device/provenance/freshness-checked login, free reward acknowledgment and update-notice actions using exact OCR targets, focused button recognition, preflight observation, local action checkpoint and post-action verification.
+- Cancel on Stop, close and device change; drain automation before installing updates. Never replay unfinished inputs or retry an unverified tap. Unsupported screens require attention.
+- Add deterministic automation policies and recognition-only Windows integration diagnostics. Full gameplay and unattended scheduling remain future work.
+
 ## 0.7.0 - 2026-11-13
 
 - Add an Account evidence page for partial labeled minion/capacity/resource readings, source text, timestamps, device/context, freshness, repeat observations and conflicts, with JSON export.

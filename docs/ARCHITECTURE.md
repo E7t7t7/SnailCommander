@@ -1,6 +1,6 @@
 # Architecture
 
-## Implemented boundaries (v0.7.0)
+## Implemented boundaries (v0.8.0)
 
 - **Windows shell** (`src/SnailCommander`): WinForms dark UI; live capture and archive; connection/preferences; Intelligence, Minion Command and Updates pages. Partial MainForm files separate feature presentation.
 - **ADB adapter** (`AdbService`): argument-list process execution, finite timeouts, binary PNG validation, 32 MB capture cap, cancelable screenshot operations and authorized-device parsing.
@@ -14,6 +14,8 @@
 - **Windows integration runner** (`tests/SnailCommander.IntegrationTests`): real PNG/ADB plus Windows OCR, box bounds, persistence/replay and duplicate-screen suppression.
 - **Profile paths** (`AppPaths`): startup-only `--data-root` configuration; default locations remain compatible. Custom profiles isolate captures and state, stay outside the installation, and propagate through updater restart/rollback.
 - **Windows update process runner** (`tests/SnailCommander.UpdateIntegrationTests`): disposable installations, published real worker, fixture child processes and the real GUI; tests the OS process/file-lock/startup/rollback boundaries. `SnailCommander.UpdateProbe` is a test-only executable and is never packaged as the product.
+
+- **Automation policy** (`SnailCommander.Core/Automation`): explicit input allowlist, live-source/freshness/device/package/target checks and conservative postconditions. `MainForm.Automation` orchestrates cancelable bounded sessions, bootstrap, preflight, input, verification and local checkpointing. `AutomationButtonReader` performs focused OCR without adding crops to account state. See AUTOMATION.md.
 
 ## Current data flow
 
@@ -39,6 +41,6 @@ Live capture, observation and update work have separate gates. OCR and optimizat
 
 The intended loop remains OBSERVE -> UNDERSTAND -> UPDATE STATE -> GOALS -> OPTIONS -> PLAN -> EXECUTE -> VERIFY -> LEARN. The current release implements observation, a bounded understanding/state representation, offline composition evaluation, and persistence/replay. It does not implement the full loop.
 
-Next: labeled real-screen fixtures and measured recognition coverage; verified account extraction; a bounded ADB action adapter; navigation preconditions and expected postconditions; resource/premium policy; journaled action results and recovery; then persistent scheduling. OCR or a model response alone must never authorize a gameplay action. Retries must stop on unknown state and capture evidence.
+Next: labeled real-screen fixtures and measured recognition coverage; verified account extraction; expand the first bounded ADB adapter with independently verified navigation routines; resource policy; durable task scheduling and measured recovery. OCR or a model response alone must never authorize a gameplay action. Retries must stop on unknown state and capture evidence.
 
 Local model memory is not neural training. A local VLM should be added only after accuracy, latency and memory benchmarks show value beyond deterministic recognition/OCR. No paid APIs are part of this design.

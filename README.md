@@ -1,20 +1,19 @@
 # Snail Commander
 
-Local Windows command center for Super Snail in BlueStacks. **v0.7.0 adds observed account evidence with provenance, freshness and conflict checks.** It includes local OCR, persistent observations, a bounded troop optimizer, isolated profiles and process-tested public updating.
+Local Windows command center for Super Snail in BlueStacks. **v0.8.0 adds a simpler Home screen and one-button bounded automation.** It includes local OCR, account evidence, troop planning, isolated profiles and process-tested public updating.
 
 [Download the latest Windows release](https://github.com/E7t7t7/SnailCommander/releases/latest)
 
 ## Use
 
 1. Extract `SnailCommander-win-x64.zip` into a writable folder and run `SnailCommander.exe`. The self-contained release includes .NET; no GitHub token or AI subscription is needed.
-2. Start BlueStacks with Android Debug Bridge enabled. Snail Commander detects its ADB executable and tries `127.0.0.1:5555`. Change the path, endpoint or selected emulator in **Connection** if needed.
-3. **Overview** shows automatic live capture. Dimensions come from the Android framebuffer; landscape launcher and portrait game screens can differ. Preview runs every 1, 2, 5 or 10 seconds.
-4. **Intelligence** shows OCR text, detected screen, supporting phrases, text boxes and conservatively labeled resource readings. Changed screens are analyzed at most every 10 seconds, with a refresh every 60 seconds for small changes. Analyze the current screen or an image file, inspect saved observations, replay text through current rules, or export JSON.
-5. **Minion Command** imports/edits a local account JSON and calculates ranked compositions for different goals and modes. `samples/minions.empty-account.json` is the starting format. **Load synthetic example** uses invented demonstration data and does not represent your account.
-6. **Updates** checks public releases at startup and every six hours, displays notes, and installs a verified download when selected. Optional automatic downloading never installs without the install action. Failed startup triggers rollback through a separate updater. Backup retention is configurable from 1-10 installations.
-7. **Account** shows supported labeled readings from recent live observations, with source text and Single/Repeated/Rounded/Unassigned/Conflicting/Stale status. A repeated reading is not verified account data. Imported images and replays stay separate. Evidence can be exported; it does not overwrite the optimizer's inventory. See [supported labels and limits](docs/ACCOUNT_EVIDENCE.md).
+2. On **Home**, press **Start automation**. It connects to the configured BlueStacks instance, starts it when its local configuration can be matched, and opens Super Snail. ADB must be enabled in BlueStacks. Adjust unusual installations under **Settings**.
+3. Use **Pause/Resume** to suspend new actions or **Stop** to cancel. Stop is also available in the header on every page.
+4. This first automation release handles recognized login Start, free reward OK, and update notices. It rechecks the screen before input and verifies the result. Unknown screens or unverified outcomes end with **Needs attention**, without repeating the tap. Continue manually and press Start again.
+5. **Advanced** retains Account evidence, Intelligence/OCR, Minion Command, captures and preview controls. Troop optimization remains advisory and uses your local account JSON. Synthetic examples are demonstration data.
+6. **Updates** checks public releases and installs verified packages with external replacement and rollback. No token or subscription is required.
 
-The application currently observes and analyzes. It does **not** navigate game menus, deploy troops, spend resources, or play unattended. Verified inventory ingestion, combat formulas, local vision-language inference and seven-day operation remain future work. Partial label extraction is implemented; representative live minion-detail accuracy is not established. Rule scores are heuristics, and OCR can misread stylized text.
+**It does not run every game system yet.** Facility navigation, deployment, cloning, upgrades, spending, persistent scheduling and seven-day operation remain unfinished. See [automation behavior and limits](docs/AUTOMATION.md). Partial account evidence does not automatically populate optimizer inventory; see [account evidence](docs/ACCOUNT_EVIDENCE.md).
 
 ## Local data
 

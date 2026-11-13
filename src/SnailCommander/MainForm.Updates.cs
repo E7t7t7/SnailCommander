@@ -107,6 +107,7 @@ public sealed partial class MainForm
             _updateStatus.Text = "Downloading and verifying update...";
             _stagedUpdate ??= await GitHubUpdates.DownloadAndPrepareAsync(_availableUpdate, _lifetime.Token);
             Log("Verified release staged. Closing to external updater; failed startup will trigger rollback.");
+            await StopAutomationAsync();
             _liveTimer.Stop();
             GitHubUpdates.LaunchInstallerAndExit(_stagedUpdate, _preferences.UpdateBackupRetention);
             _lifetime.Cancel();
