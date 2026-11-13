@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.0 - 2026-11-13
+
+- Add an Account evidence page for partial labeled minion/capacity/resource readings, source text, timestamps, device/context, freshness, repeat observations and conflicts, with JSON export.
+- Preserve explicit observation provenance. Imported images, replays, synthetic fixtures and legacy records cannot populate live account evidence; missing values remain unknown.
+- Add strict labeled-field extraction with unique-name binding, numeric/quantity limits, rounded-display flags, ambiguity rejection and independent Leadership/Minion MAX fields. Keep optimizer inventory unchanged until further verification is implemented.
+- Add bounded enlarged OCR fallback for Unknown screens, retaining native OCR for recognized screens after tests exposed enlargement regressions. Persist processing scale/pass diagnostics and keep one image's passes as one observation.
+- Add deterministic account-policy tests and a local real-Windows-OCR synthetic fixture check; retain profile, update and rollback release checks.
+
 ## 0.6.2 - 2026-11-02
 
 - Reopen the unchanged previous application if update backup creation fails before a transaction can be journaled.

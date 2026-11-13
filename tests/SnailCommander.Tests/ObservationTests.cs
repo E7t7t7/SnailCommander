@@ -54,11 +54,21 @@ public static class ObservationTests
         try
         {
             var store = new ObservationStore(path, retainedCount: 2);
-            var first = MakeObservation(now, "Gene Research\nResearch time 12:00\nB-Tads 50");
+            var first = MakeObservation(now, "Gene Research\nResearch time 12:00\nB-Tads 50") with
+            { Origin = ObservationOrigin.Synthetic, OcrInputScale = 1.875, OcrPassCount = 2, OcrNotes = "Synthetic metadata round trip" };
             store.SaveAsync(first).GetAwaiter().GetResult();
             var loaded = new ObservationStore(path, retainedCount: 2).LoadRecent();
             assert(loaded.Count == 1 && loaded[0].Id == first.Id && loaded[0].Text == first.Text
                 && loaded[0].Orientation == ScreenOrientation.Portrait, "Observation history round-trips across store instances.");
+            assert(loaded[0].Origin == ObservationOrigin.Synthetic && loaded[0].OcrInputScale == 1.875
+                && loaded[0].OcrPassCount == 2 && loaded[0].OcrNotes == first.OcrNotes,
+                "Observation provenance and OCR diagnostics survive restart without being promoted to live data.");
+            foreach (var invalid in new[] { first with { Origin = (ObservationOrigin)99 }, first with { OcrInputScale = 0 }, first with { OcrPassCount = 3 } })
+            {
+                bool rejected = false;
+                try { store.SaveAsync(invalid).GetAwaiter().GetResult(); } catch (ArgumentException) { rejected = true; }
+                assert(rejected, "Invalid observation provenance/processing metadata is rejected.");
+            }
             store.SaveAsync(MakeObservation(now.AddSeconds(1), "Minion MAX 30\nLeadership 60")).GetAwaiter().GetResult();
             store.SaveAsync(MakeObservation(now.AddSeconds(2), "Battle results\nVictory")).GetAwaiter().GetResult();
             assert(Directory.GetFiles(path, "*.json").Length == 2 && store.LoadRecent()[0].CapturedAt == now.AddSeconds(2),

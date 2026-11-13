@@ -15,14 +15,18 @@ try
 {
     string output = Path.GetFullPath(Value("--output") ?? Path.Combine(AppContext.BaseDirectory, "integration-output"));
     if (args.Contains("--check-profiles")) return ProfilePathTests.Run(output);
+    if (args.Contains("--check-account-ocr")) return await AccountOcrTests.RunAsync(output);
     Directory.CreateDirectory(output);
-    var observer = new ObservationService(Path.Combine(output, "observations"));
+    double scale = Value("--ocr-scale") is { } rawScale ? double.Parse(rawScale, System.Globalization.CultureInfo.InvariantCulture) : 1;
+    var observer = new ObservationService(Path.Combine(output, "observations"), scale, args.Contains("--adaptive-ocr"));
     byte[] png;
     string device;
+    ObservationOrigin origin;
     if (Value("--image") is { } image)
     {
         png = await File.ReadAllBytesAsync(image);
         device = "Fixture: " + Path.GetFileName(image);
+        origin = ObservationOrigin.ImportedImage;
     }
     else if (Value("--adb") is { } adb && Value("--device") is { } serial)
     {
@@ -30,11 +34,12 @@ try
         if (!devices.Contains(serial)) throw new Exception("Requested emulator is not connected.");
         png = await AdbService.CaptureAsync(adb, serial);
         device = serial;
+        origin = ObservationOrigin.LiveAdb;
         await File.WriteAllBytesAsync(Path.Combine(output, "live.png"), png);
     }
     else throw new ArgumentException("Specify --image <path> or --adb <path> --device <serial>.");
     var watch = Stopwatch.StartNew();
-    var observation = await observer.ObserveAsync(png, device, true) ?? throw new Exception("No OCR result.");
+    var observation = await observer.ObserveAsync(png, device, true, origin: origin) ?? throw new Exception("No OCR result.");
     if (observation.Width <= 0 || observation.Height <= 0 || observation.Elements.Count == 0)
         throw new Exception("OCR did not produce dimensions and readable text regions.");
     if (observation.Elements.Any(e => e.X < 0 || e.Y < 0 || e.X + e.Width > observation.Width + 1 || e.Y + e.Height > observation.Height + 1))

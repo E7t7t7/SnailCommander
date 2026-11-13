@@ -115,6 +115,9 @@ public sealed class ObservationStore : IObservationStore
     private static bool IsValid(ScreenObservation item) =>
         item.Width is > 0 and <= 8192 && item.Height is > 0 and <= 8192
         && !string.IsNullOrWhiteSpace(item.Id) && item.Device is not null && item.Text is not null
+        && Enum.IsDefined(item.Origin)
+        && double.IsFinite(item.OcrInputScale) && item.OcrInputScale is > 0 and <= 2
+        && item.OcrPassCount is >= 1 and <= 2 && item.OcrNotes is not null
         && item.Classification is not null && Enum.IsDefined(item.Classification.Kind)
         && double.IsFinite(item.Classification.Confidence) && item.Classification.Confidence is >= 0 and <= 1
         && item.Classification.Evidence is not null && item.Classification.Evidence.All(e => e is not null)
@@ -132,6 +135,7 @@ public static class ObservationReplay
         => records.OrderBy(r => r.CapturedAt).Select(r => r with
         {
             Classification = classifier.Classify(r.Text), Resources = ResourceTextParser.Parse(r.Text),
-            RecognitionSource = "Replay of recorded OCR text; no new image recognition"
+            RecognitionSource = "Replay of recorded OCR text; no new image recognition",
+            Origin = ObservationOrigin.Replay
         }).ToArray();
 }

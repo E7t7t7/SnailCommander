@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using SnailCommander.Core.Minions;
 using SnailCommander.Core.Observation;
+using SnailCommander.Core.Accounts;
 using SnailCommander.Observation;
 
 namespace SnailCommander;
@@ -23,7 +24,7 @@ public sealed partial class MainForm
     private readonly ComboBox _troopMode = Theme.DropDown();
     private MinionAccount? _minionAccount;
 
-    private ObservationService Observer => _observer ??= new(Path.Combine(DataDirectory, "Observations"));
+    private ObservationService Observer => _observer ??= new(Path.Combine(DataDirectory, "Observations"), retryUnknownAtLargerScale: true);
 
     private void BuildIntelligence()
     {
@@ -65,17 +66,18 @@ public sealed partial class MainForm
         return panel;
     }
 
-    private async Task ObserveFrameAsync(byte[] png, string device, bool force = false)
+    private async Task ObserveFrameAsync(byte[] png, string device, bool force = false, ObservationOrigin origin = ObservationOrigin.LiveAdb)
     {
         try
         {
-            var result = await Observer.ObserveAsync(png, device, force, _lifetime.Token);
+            var result = await Observer.ObserveAsync(png, device, force, _lifetime.Token, origin);
             if (IsDisposed || Disposing || _lifetime.IsCancellationRequested) return;
             if (result is null) return;
             if (!force && device != _selectedDevice) return;
             _lastObservationError = "";
             PresentObservation(result, "Observed");
             RefreshObservationHistory();
+            if (origin == ObservationOrigin.LiveAdb) _ = RefreshAccountEvidenceAsync();
             _quickStatus.Text = $"{result.Classification.Kind} • rule score {result.Classification.Confidence:P0}\n" +
                 $"{result.Elements.Count} text regions • {result.OcrLanguage}\n" +
                 "Local OCR every 10s on changed screens; refresh every 60s. Gameplay execution is not implemented.";
@@ -102,6 +104,8 @@ public sealed partial class MainForm
             .AppendLine($"Frame: {observation.Width} × {observation.Height} ({observation.Orientation})")
             .AppendLine($"Source: {observation.RecognitionSource}")
             .AppendLine($"OCR language: {observation.OcrLanguage}")
+            .AppendLine($"Origin: {observation.Origin} • OCR scale: {observation.OcrInputScale:F2}×")
+            .AppendLine($"OCR passes: {observation.OcrPassCount} • {observation.OcrNotes}")
             .AppendLine($"Rule set: {classification.RuleVersion}")
             .AppendLine("Rule score is heuristic, not a probability.")
             .AppendLine().AppendLine("Matched evidence:");
@@ -109,6 +113,11 @@ public sealed partial class MainForm
         details.AppendLine().AppendLine("Visible labeled resources (unverified readings):");
         if (observation.Resources.Count == 0) details.AppendLine("None established from this frame.");
         foreach (var resource in observation.Resources) details.AppendLine($"{resource.Name}: {resource.Quantity:N0} — {resource.RawText}");
+        var extracted = AccountEvidenceExtractor.Extract(observation);
+        details.AppendLine().AppendLine("Labeled account/minion readings (unverified):");
+        foreach (var reading in extracted.Readings)
+            details.AppendLine($"{reading.MinionName ?? "Unassigned"} • {FieldName(reading.Field)}: {reading.Value}{(reading.Rounded ? " (rounded display)" : "")}");
+        foreach (var issue in extracted.Issues) details.AppendLine(issue);
         details.AppendLine().AppendLine("Text boxes in Android framebuffer pixels:");
         foreach (var region in observation.Elements.Take(250))
             details.AppendLine($"[{region.X:F0},{region.Y:F0} {region.Width:F0}×{region.Height:F0}] {region.Text}");
@@ -148,7 +157,7 @@ public sealed partial class MainForm
         using var dialog = new OpenFileDialog { Title = "Analyze a local screenshot", Filter = "Images|*.png;*.jpg;*.jpeg;*.bmp" };
         if (dialog.ShowDialog(this) != DialogResult.OK) return;
         if (new FileInfo(dialog.FileName).Length > 32 * 1024 * 1024) throw new InvalidDataException("Image exceeds 32 MB.");
-        await ObserveFrameAsync(await File.ReadAllBytesAsync(dialog.FileName, _lifetime.Token), "File: " + Path.GetFileName(dialog.FileName), true);
+        await ObserveFrameAsync(await File.ReadAllBytesAsync(dialog.FileName, _lifetime.Token), "File: " + Path.GetFileName(dialog.FileName), true, ObservationOrigin.ImportedImage);
     }
 
     private async Task ReplayObservationsAsync()

@@ -1,11 +1,12 @@
 # Architecture
 
-## Implemented boundaries (v0.6.2)
+## Implemented boundaries (v0.7.0)
 
 - **Windows shell** (`src/SnailCommander`): WinForms dark UI; live capture and archive; connection/preferences; Intelligence, Minion Command and Updates pages. Partial MainForm files separate feature presentation.
 - **ADB adapter** (`AdbService`): argument-list process execution, finite timeouts, binary PNG validation, 32 MB capture cap, cancelable screenshot operations and authorized-device parsing.
 - **Windows observation adapter** (`Observation/ObservationService`): worker-thread image sampling and Windows OCR. Its independent semaphore prevents queued inference; cadence and perceptual changes govern analysis. Coordinates map back to the actual framebuffer.
 - **Pure observation logic** (`SnailCommander.Core/Observation`): immutable structured records, conservative text screen rules, labeled resource parsing, independent cadence, atomic retained history and deterministic text replay.
+- **Account evidence** (`SnailCommander.Core/Accounts`): partial labeled readings, unique minion-name binding, provenance/freshness/conflict projection and device/mode separation. `MainForm.AccountEvidence` renders and exports evidence; it never patches the optimizer's inventory automatically. See ACCOUNT_EVIDENCE.md.
 - **Pure troop strategy** (`SnailCommander.Core/Minions`): evidence-tagged account models, effective stats, supplied mode/type/threshold bonuses, bounded composition search, explicit stat scoring and reserve-aware advisory cloning queues.
 - **Pure update logic** (`SnailCommander.Core/Updates`): version policy, digest/package validation, durable file replacement journal and rollback, startup acknowledgment.
 - **External update process** (`SnailCommander.Updater`): waits for app exit, applies staged package, verifies startup and restores on failure. Settings and account data live outside the installation.

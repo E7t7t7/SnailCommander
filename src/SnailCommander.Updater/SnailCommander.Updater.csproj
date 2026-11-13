@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>SnailCommander.Updater</AssemblyName>
-    <Version>0.6.2</Version>
+    <Version>0.7.0</Version>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\SnailCommander.Core\SnailCommander.Core.csproj" />

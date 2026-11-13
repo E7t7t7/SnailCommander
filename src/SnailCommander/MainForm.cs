@@ -73,6 +73,7 @@ public sealed partial class MainForm : Form
         BuildActivity();
         BuildIntelligence();
         BuildMinionCommand();
+        BuildAccountEvidence();
         BuildUpdates();
         RestoreWindowBounds();
 
@@ -189,6 +190,7 @@ public sealed partial class MainForm : Form
         {
             ("Overview", "◉"), ("Captures", "▣"),
             ("Intelligence", "◇"), ("Minion Command", "♟"),
+            ("Account", "◎"),
             ("Connection", "⌁"), ("Activity", "≡"), ("Updates", "↻")
         })
         {
@@ -512,6 +514,7 @@ public sealed partial class MainForm : Form
             _ => name
         };
         _pageHost.ResumeLayout();
+        if (name == "Account") _ = RefreshAccountEvidenceAsync(reload: false);
     }
 
     private static TableLayoutPanel TwoButtons(Button first, Button second)
@@ -761,6 +764,7 @@ public sealed partial class MainForm : Form
 
     private async Task RefreshDevicesCoreAsync()
     {
+        string previousDevice = _selectedDevice;
         var entries = await AdbService.GetDevicesAsync(GetAdb());
         _syncingDevices = true;
         try
@@ -798,6 +802,11 @@ public sealed partial class MainForm : Form
             Log("ADB devices: " + string.Join(", ", entries));
         }
         SavePreferences();
+        if (previousDevice != _selectedDevice)
+        {
+            InvalidateAccountEvidence();
+            _ = RefreshAccountEvidenceAsync();
+        }
     }
 
     private void SyncDevice(ComboBox source)
@@ -813,6 +822,8 @@ public sealed partial class MainForm : Form
         }
         finally { _syncingDevices = false; }
         SavePreferences();
+        InvalidateAccountEvidence();
+        _ = RefreshAccountEvidenceAsync();
     }
 
     private void SavePreferences()
@@ -972,6 +983,8 @@ public sealed partial class MainForm : Form
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
         _lifetime.Cancel();
+        _accountAgeTimer.Stop();
+        _accountAgeTimer.Dispose();
         _updateTimer.Stop();
         _updateTimer.Dispose();
         SaveWindowBounds();

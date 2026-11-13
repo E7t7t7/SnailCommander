@@ -1,6 +1,6 @@
 # Snail Commander
 
-Local Windows command center for Super Snail in BlueStacks. **v0.6.2 strengthens update recovery with real Windows process tests and isolated local profiles.** It includes local OCR, persistent structured observations and a bounded troop composition optimizer, while preserving the live preview and public GitHub updater.
+Local Windows command center for Super Snail in BlueStacks. **v0.7.0 adds observed account evidence with provenance, freshness and conflict checks.** It includes local OCR, persistent observations, a bounded troop optimizer, isolated profiles and process-tested public updating.
 
 [Download the latest Windows release](https://github.com/E7t7t7/SnailCommander/releases/latest)
 
@@ -12,8 +12,9 @@ Local Windows command center for Super Snail in BlueStacks. **v0.6.2 strengthens
 4. **Intelligence** shows OCR text, detected screen, supporting phrases, text boxes and conservatively labeled resource readings. Changed screens are analyzed at most every 10 seconds, with a refresh every 60 seconds for small changes. Analyze the current screen or an image file, inspect saved observations, replay text through current rules, or export JSON.
 5. **Minion Command** imports/edits a local account JSON and calculates ranked compositions for different goals and modes. `samples/minions.empty-account.json` is the starting format. **Load synthetic example** uses invented demonstration data and does not represent your account.
 6. **Updates** checks public releases at startup and every six hours, displays notes, and installs a verified download when selected. Optional automatic downloading never installs without the install action. Failed startup triggers rollback through a separate updater. Backup retention is configurable from 1-10 installations.
+7. **Account** shows supported labeled readings from recent live observations, with source text and Single/Repeated/Rounded/Unassigned/Conflicting/Stale status. A repeated reading is not verified account data. Imported images and replays stay separate. Evidence can be exported; it does not overwrite the optimizer's inventory. See [supported labels and limits](docs/ACCOUNT_EVIDENCE.md).
 
-The application currently observes and analyzes. It does **not** navigate game menus, deploy troops, spend resources, or play unattended. Automatic account/minion extraction, validated combat formulas, local vision-language inference, and seven-day operation remain future work. Rule scores are heuristics, not calibrated probabilities. OCR can misread stylized game text.
+The application currently observes and analyzes. It does **not** navigate game menus, deploy troops, spend resources, or play unattended. Verified inventory ingestion, combat formulas, local vision-language inference and seven-day operation remain future work. Partial label extraction is implemented; representative live minion-detail accuracy is not established. Rule scores are heuristics, and OCR can misread stylized text.
 
 ## Local data
 

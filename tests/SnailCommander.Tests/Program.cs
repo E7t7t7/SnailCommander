@@ -11,7 +11,8 @@ void Assert(bool condition, string name)
 foreach (var suite in new (string Name, Action<Action<bool, string>> Run)[]
 {
     ("Devices", DeviceTests.Run), ("Observation", ObservationTests.Run),
-    ("Minions", MinionTests.Run), ("Updates", UpdateTests.Run)
+    ("Minions", MinionTests.Run), ("Updates", UpdateTests.Run),
+    ("Account evidence", AccountEvidenceTests.Run)
 })
 {
     try { suite.Run(Assert); Console.WriteLine($"{suite.Name}: completed"); }

@@ -1,71 +1,65 @@
 # Development status
 
-## Current version and release
+## Current version
 
-- Application/updater: **0.6.2**, work completed 2026-11-02 (America/New_York).
-- Source checkout: `source/` inside the SnailCommander workspace. Session baseline `c185e8261a0d0eaeb5939e2bfede1d921c1d31ee` matched public main with no user changes.
-- Last verified public release at session start: [v0.6.1](https://github.com/E7t7t7/SnailCommander/releases/tag/build-3f3bebe212a59d17d5f4fbed31b9c40cff245b24). v0.6.2 is published as [build-f9511c92f84ceb4a81fa4f5f14d77f61f4fc4c85](https://github.com/E7t7t7/SnailCommander/releases/tag/build-f9511c92f84ceb4a81fa4f5f14d77f61f4fc4c85); [CI passed](https://github.com/E7t7t7/SnailCommander/actions/runs/41564300092), including real updater process and profile checks; build tags remain `build-<40-character commit>` for existing updater compatibility.
-- Existing installed folders, normal preferences, account data and capture history are preserved. This session's GUI/update tests used disposable custom profiles only.
+- App/updater: **0.7.0**, session date 2026-11-13 (America/New_York).
+- Baseline: `16e95eca2789bfda14e8d3b67c90f6b65f99684a`; local and public main matched, with no user changes.
+- Last verified public release at session start: [v0.6.2](https://github.com/E7t7t7/SnailCommander/releases/tag/build-f9511c92f84ceb4a81fa4f5f14d77f61f4fc4c85). v0.7.0 release publication is pending final CI verification.
 
 ## Completed this session
 
-1. Added reproducible real Windows updater process tests, using the published worker executable, child-process fixtures, and the actual published GUI.
-2. Validated successful replacement; immediate startup exit; no acknowledgment before deadline; exit during the grace period; mid-copy failure; backup creation failure before a transaction exists; recovery on a later attempt after forcibly terminating an updater; and successful installation/startup of the actual GUI.
-3. Fixed a recovery defect: when backup creation fails after the old app exits but before a journal exists, the worker now reopens the unchanged previous installation.
-4. Added startup-only `--data-root` profiles. Settings, captures, observations, minion JSON, logs and update backups are isolated; the profile propagates through update handoff, replacement startup and rollback restart. Default data locations remain unchanged. Custom profiles cannot be drive roots or reside inside the application installation.
-5. Added bounded, validated diagnostic worker options and independent locks for isolated diagnostic data roots. Normal clients retain their original mutex and 45-second/three-second health timing. Attempt-owned health files are removed on success and failure.
-6. Made process tests and default/custom profile-path checks mandatory CI release gates. A JSON process report is retained as a CI artifact. Test-only process probes are not included in the product package.
-7. Derived GUI version labels from assembly metadata; custom profiles display their directory name in the title.
+- Added a pure labeled-field extractor and partial account evidence projection in Core/Accounts. Leadership and individual Minion MAX remain independent; missing values remain unknown.
+- Added explicit observation provenance: LiveAdb, ImportedImage, Replay, Synthetic and legacy Unspecified. Imported/replayed/synthetic/legacy records cannot populate the live evidence projection.
+- Added unique minion-name binding from explicit labels or exact known nonsynthetic inventory names. Unnamed cards never corroborate across frames. Multiple names stay unassigned.
+- Added Single/Repeated/Rounded/Unassigned/Conflicting/Stale state, a ten-minute freshness policy, duplicate/time/device separation, simultaneous-conflict handling and source evidence. Repeated readings are not calibrated OCR confidence.
+- Added the Account GUI page with field/state/time/context rows, source text, refresh and JSON export. It does not overwrite optimizer inventory. GUI smoke verified the page and controls at the normal window size in an isolated profile, including the correct empty state.
+- Added adaptive OCR: native first; bounded enlargement only for Unknown screens and selected only when it resolves screen classification. Scale, pass count and fallback notes persist. One image with two OCR passes is still one observation.
+- Kept the public updater, isolated profiles, rollback, retained observation history and existing optimizer working.
 
-## Verified product capabilities
+## Verification
 
-- Existing dark WinForms shell, automatic ADB discovery/device selection/reconnection, live preview, capture library, local preferences and public GitHub updating.
-- Local Windows OCR, conservative English screen classification, structured evidence/text regions/resources, actual framebuffer resolution/orientation, independent changed-screen cadence and bounded atomic observation history/replay.
-- Evidence-tagged minion input models, independent Leadership and per-type MAX limits, ready/deployed/healing quantities, supplied threshold/mode/type bonuses, bounded composition search and explainable stat-based results. Advisory clone planning respects explicit resource reserves.
-- Minion account import/edit/save and clearly labeled synthetic examples; Intelligence inspection/export/replay; public release notes, periodic update checks, optional verified download and explicit installation.
-- External installer, SHA-256 verification, ZIP/path/size limits, persistent replacement journals, startup acknowledgment, rollback, configurable known-good backup retention and next-attempt interrupted-update recovery.
-- Saved window geometry and bounded GUI log text; custom profiles preserve normal storage behavior unless explicitly selected.
+- Baseline: 124 deterministic assertions passed.
+- Current deterministic suite: **178 assertions, 0 failures**, including 54 additional account/provenance/metadata checks.
+- Windows profile-path checks: **12 assertions passed**.
+- Real updater process suite against the expanded GUI: **84 assertions passed**, across all eight existing scenarios, including failed startup, grace-period exit, copy/backup failures, killed-worker recovery and actual GUI installation/startup.
+- Local real Windows OCR -> extraction integration: **8 checks passed**, producing 11 labeled fields from rendered synthetic text. Selected numbers, name binding, framebuffer bounds, persistence and exclusion from live account state were verified. This is a synthetic fixture, not a real game account.
+- Local builds and self-contained publishes passed. App/updater builds have no compilation warnings/errors.
+- Real emulator observations were collected locally: 960x540 launcher and 540x960 game notice, navigation, profile and reward screens. Captures/OCR containing player/chat details stay in ignored local artifacts and are not published.
+- OCR comparison: the native notice was Unknown; adaptive enlargement resolved it to Events in about 374 ms including persistence/replay. Native synthetic-card OCR retained HP/ATK; forced enlargement dropped HP and misread ATK. This measured regression is why recognized screens keep native OCR. Other sampled game screens remained Unknown. No representative accuracy percentage is claimed.
+- Normal user application data was not used for GUI/update tests. The UI test used `account-ui-smoke` with preview disabled and closed cleanly.
 
-## Verification results
+## Manual game-inspection outcomes
 
-- Baseline at session start: 113 deterministic assertions passed.
-- Current deterministic regression suite: **124 assertions, 0 failures**.
-- Real Windows process suite: **84 assertions, 0 failures**, across eight scenarios. Verified actual exit codes, on-disk journal states, successful old-app restart, cleanup of new package files after rollback, preservation of unrelated files/account inputs, replacement responsiveness, and profile-local GUI logs/captures.
-- Profile paths: **12 assertions, 0 failures**. Default paths, malformed/duplicate/root/installation-contained arguments, custom preferences persistence, and isolated capture history are checked without loading or modifying normal user data.
-- Release app, updater, process fixture and test projects compile/publish successfully. Process tests use self-contained Windows executables; OCR is not mocked into the GUI health handshake.
-- The killed-worker scenario terminated only its verified test worker while its replacement remained alive. The following update attempt recovered the pending journal, restored old files, and completed a fresh healthy installation. This is next-attempt recovery, not automatic worker relaunch.
-- Tests stop only processes whose executable paths match their disposable installations. Passing test folders are removed after absolute-parent/owner checks; failure evidence is retained under ignored artifacts.
-- No live gameplay action, purchase, premium expenditure, seven-day soak, or new OCR-accuracy benchmark was performed this session. The real GUI case disables preview and uses an empty fixture account.
+Manual ADB navigation opened the already-selected account and inspected menus. A facility interaction produced a Collect Bodies reward, and a later navigation interaction produced a Memory Module/Rewards Gained popup. These were real game changes, not read-only capture. No cloning order, upgrade or paid/premium expenditure was intentionally issued; before/after currency balances were not independently audited. The navigation was stopped rather than promoted into an unattended routine. The shipped application still contains no gameplay input controller. Reward gains are explicitly rejected as inventory totals by the new extractor.
 
-## Earlier integration evidence
+## Current working product
 
-The preceding session verified actual BlueStacks ADB/OCR on `127.0.0.1:5555`: launcher **960x540**, 26 OCR regions, `EmulatorHome`, approximately 240 ms; Super Snail event notice **540x960**, 50 OCR regions, `Events`, approximately 200-203 ms including persistence/replay. These are two measured integration samples, not an accuracy corpus. A later visual GUI recheck was blocked by Windows capture helper `CreateForMonitor (0x80070057)`; no DPI/scaling matrix is claimed. v0.6.1 also corrected duplicate SDK revision metadata causing same-build update offers.
+- Local .NET 8 WinForms command center, live ADB preview, capture library, persistent preferences/logs and isolated profiles.
+- Local Windows OCR, conservative screen rules, structured text regions/resources, independent observation cadence, retained atomic history and replay.
+- Partial labeled account/minion evidence with provenance/freshness/conflict checks and a GUI inspection/export path.
+- Evidence-tagged user-entered minion inventory, bounded composition optimization and reserve-aware advisory cloning plans.
+- Public token-free release checks/downloads, SHA-256/package validation, external replacement worker, startup acknowledgment, rollback and process-tested next-attempt interrupted-update recovery.
 
-## Incomplete and known limitations
+## Limits and unfinished work
 
-- This remains **observation and advisory optimization**, not an autonomous player. No authoritative account/minion extraction, verified game catalog, model inference, gameplay navigation/action controller, persistent gameplay scheduler, combat outcome prediction, equipment/relic/form/partner optimizer, event strategy, weekly report, or unattended agent loop exists yet.
-- Troop scores are explicit stat heuristics, not damage/casualty formulas, win probabilities or guaranteed globally optimal formations. Mode capacity must be supplied; only supplied bonuses are applied. Cloning is an advisory core API and never executes in-game spending.
-- OCR rules are incomplete and English-oriented. Unreadable/conflicting fields remain unknown. Observation records are not an authoritative account balance.
-- Manual rollback selection is still incomplete; Open update history opens journal/backups only. Failed/legacy backups and temporary ZIP/staging folders can accumulate. Legacy screenshot archives/disk logs are not fully retention-managed.
-- A terminated worker does not relaunch itself; later-attempt recovery is now process-tested. Power-loss durability, every historical binary upgrade, interactive UI click-through installation, and seven-day reliability are not established by these tests.
-- Public GitHub Latest checking and promotion are separate API calls; the known narrow race with an external publisher remains. Missing integrity metadata safely blocks installation.
+- **Not an autonomous player.** No verified account inventory ingestion, gameplay controller, persistent gameplay scheduler, learned navigation, battle predictor, strategic local model, full equipment/form/relic/partner optimizer, event planner, weekly report or seven-day operation exists yet.
+- Positive minion-detail extraction has been tested through typed/rendered synthetic fixtures. A representative positive real minion-card corpus and actual own-account identity validation are still missing. Do not claim the real inventory is populated automatically.
+- Strict labels do not resolve icon-only resources or every game layout. Displayed stats may be base or effective; their gameplay meaning is not inferred. Modes without explicit supported text remain unspecified. Missing labels and ambiguous numbers remain unknown.
+- Device identity does not prove account identity. Switching game accounts on one emulator is not automatically detected. This is one reason evidence does not patch optimizer data automatically.
+- Evidence lookback is bounded to 200 recent records in the GUI, with 3,000 retained observation files. Stale/evicted fields cannot be assumed current. Legacy records without provenance are retained for inspection but excluded from live state.
+- Repeated OCR is not neural training or a win/casualty model. Existing troop scores remain explicit stat heuristics with bounded-search limitations.
+- User-facing manual rollback selection, global capture/log/temp cleanup, automatic relaunch of a killed updater and power-loss guarantees remain incomplete. Interrupted updates recover on a later attempt, not through an independent watchdog.
+- The known narrow GitHub Latest promotion race remains; missing integrity metadata safely prevents installation.
 
 ## Next priority
 
-1. Build a labeled real-game screen corpus and measure OCR/classifier precision. Implement provenance/freshness-aware account and minion extraction instead of requiring account JSON.
-2. Research and record verified game mechanics and minion bonuses with source/date/applicability/confidence; do not invent names, reset schedules, damage formulas or thresholds.
-3. Introduce bounded ADB actions, expected transitions, cancellation, action journals and postcondition tests; complete one verified free-reward/navigation loop before broad gameplay scheduling.
-4. Add persistent task scheduling/checkpoints/resource policy, controlled recovery and extended soak tests before unattended claims.
-5. Complete user-facing rollback selection and bounded temporary/capture/log cleanup.
-6. Benchmark compact local VLMs only when held-out recognition measurements justify them; no model or paid inference service is installed.
+1. Collect and label real own-account minion detail/deployment screens; validate names, per-field layouts, quantities and base/effective stat semantics. Add account/session identity before allowing evidence to update inventory.
+2. Expand deterministic recognition/region parsing and establish a held-out real-game accuracy benchmark. Keep private screenshots/OCR local.
+3. Add a verified inventory-ingestion/review transaction with freshness and coherent quantity constraints; then connect it to troop optimization.
+4. Add bounded ADB actions with expected transitions, cancellation, source-checked targets, action journals and postcondition tests. The manual navigation side effects show why this must precede unattended gameplay.
+5. Add persistent task scheduling/resource policies, recovery and soak tests; complete rollback selection and bounded cleanup.
+6. Benchmark compact local VLMs only when they improve measured recognition. No model download or paid inference service was introduced.
 
-## Architectural decisions
+## Durable architecture
 
-Preserve .NET 8 WinForms and token-free public updates. Pure observation, strategy and update policies remain in Core; Windows adapters and GUI stay separate. Use bounded flushed atomic JSON observation records until account-wide transactions justify a database. Isolate all test state through explicit local profiles. Persistent history is account memory, not neural training. See ARCHITECTURE.md, OBSERVATION.md, MINION_OPTIMIZER.md, LOCAL_INFERENCE.md and UPDATER.md.
-
-## Delivered release verification
-
-- Current public release: **0.6.2**, source commit `f9511c92f84ceb4a81fa4f5f14d77f61f4fc4c85`. Both GitHub CI jobs succeeded.
-- Downloaded the actual Latest ZIP and verified its GitHub SHA-256 digest: `0374b5e83d8fa1d71de8b5e27ecf4ede8c15a6ddb150239ec83be58a9071e07b`.
-- Actual executable metadata: `0.6.2+f9511c92f84ceb4a81fa4f5f14d77f61f4fc4c85`.
-- Local delivery: `SnailCommander-v0.6.2/SnailCommander.exe` and `SnailCommander-v0.6.2.zip` beside the source checkout. Previous installed versions remain intact.
+Preserve existing Windows application/updater behavior. Pure observation/account/strategy/update logic stays in Core; Windows OCR and GUI remain adapters. Account evidence is derived from persisted observations with source metadata, not model training or an authoritative database balance. See ACCOUNT_EVIDENCE.md for exact labels, scopes, states, OCR selection and reproduction commands; other subsystem docs remain applicable.

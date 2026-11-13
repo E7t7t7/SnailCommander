@@ -7,6 +7,7 @@ public enum ScreenKind
 }
 
 public enum ScreenOrientation { Portrait, Landscape, Square }
+public enum ObservationOrigin { Unspecified, LiveAdb, ImportedImage, Replay, Synthetic }
 
 public sealed record TextElement(string Text, double X, double Y, double Width, double Height);
 
@@ -22,12 +23,16 @@ public sealed record ScreenObservation
     public string Id { get; init; } = Guid.NewGuid().ToString("N");
     public DateTimeOffset CapturedAt { get; init; } = DateTimeOffset.UtcNow;
     public string Device { get; init; } = "";
+    public ObservationOrigin Origin { get; init; }
     public int Width { get; init; }
     public int Height { get; init; }
     public ScreenOrientation Orientation => Width == Height ? ScreenOrientation.Square
         : Width > Height ? ScreenOrientation.Landscape : ScreenOrientation.Portrait;
     public string Fingerprint { get; init; } = "";
     public string OcrLanguage { get; init; } = "";
+    public double OcrInputScale { get; init; } = 1;
+    public int OcrPassCount { get; init; } = 1;
+    public string OcrNotes { get; init; } = "";
     public string Text { get; init; } = "";
     public IReadOnlyList<TextElement> Elements { get; init; } = Array.Empty<TextElement>();
     public ScreenClassification Classification { get; init; } = new(ScreenKind.Unknown, 0, Array.Empty<string>());
