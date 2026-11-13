@@ -4,7 +4,7 @@
 
 - App/updater: **0.7.0**, session date 2026-11-13 (America/New_York).
 - Baseline: `16e95eca2789bfda14e8d3b67c90f6b65f99684a`; local and public main matched, with no user changes.
-- Last verified public release at session start: [v0.6.2](https://github.com/E7t7t7/SnailCommander/releases/tag/build-f9511c92f84ceb4a81fa4f5f14d77f61f4fc4c85). v0.7.0 release publication is pending final CI verification.
+- Last verified public release at session start: [v0.6.2](https://github.com/E7t7t7/SnailCommander/releases/tag/build-f9511c92f84ceb4a81fa4f5f14d77f61f4fc4c85). v0.7.0 is published as [build-fb0fafce2790ebc5324b8358e3460a0f2cd3ab75](https://github.com/E7t7t7/SnailCommander/releases/tag/build-fb0fafce2790ebc5324b8358e3460a0f2cd3ab75); [CI passed](https://github.com/E7t7t7/SnailCommander/actions/runs/43458598283), including deterministic account policies and Windows process/profile gates.
 
 ## Completed this session
 
@@ -63,3 +63,11 @@ Manual ADB navigation opened the already-selected account and inspected menus. A
 ## Durable architecture
 
 Preserve existing Windows application/updater behavior. Pure observation/account/strategy/update logic stays in Core; Windows OCR and GUI remain adapters. Account evidence is derived from persisted observations with source metadata, not model training or an authoritative database balance. See ACCOUNT_EVIDENCE.md for exact labels, scopes, states, OCR selection and reproduction commands; other subsystem docs remain applicable.
+
+## Delivered release verification
+
+- Public release **0.7.0**, code commit `fb0fafce2790ebc5324b8358e3460a0f2cd3ab75`. Both GitHub CI jobs succeeded.
+- CI gates passed 178 deterministic, 84 process, and 12 profile-path assertions (274 total). The additional 8 local OCR-provider checks use synthetic text and are not a live minion accuracy corpus.
+- Downloaded the actual Latest ZIP and verified its GitHub SHA-256 digest: `193b5d0f27d9ddb4e25ec018ad2b123bf768a76af7206192382ad646b898b4f3`.
+- Actual executable metadata: `0.7.0+fb0fafce2790ebc5324b8358e3460a0f2cd3ab75`.
+- Local delivery: `SnailCommander-v0.7.0/SnailCommander.exe` and `SnailCommander-v0.7.0.zip` beside the source checkout. Previous installed versions remain intact.
