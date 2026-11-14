@@ -32,4 +32,10 @@ The in-app game view remains screenshot mirroring at roughly two frames per seco
 
 ## Release delivery
 
-Local app/updater builds passed without warnings/errors. All 84 real updater-process assertions and 12 profile-path assertions passed. Public release verification pending. Existing versions and rollback ZIPs remain intact.
+- Published final code commit: 6bcc11690958d1ce97b8a7c83814909589dfdf8e, including explicit recovery-to-notice verification and the preview/bootstrap race fix.
+- Public release: [v0.9.0](https://github.com/E7t7t7/SnailCommander/releases/tag/build-6bcc11690958d1ce97b8a7c83814909589dfdf8e).
+- [CI 43539256817](https://github.com/E7t7t7/SnailCommander/actions/runs/43539256817): build and publish-release both succeeded. Final gates passed 265 deterministic, 84 process and 12 profile assertions (361 total). The additional 8 local OCR/storage assertions remain explicitly synthetic/provider checks.
+- Local app/updater builds passed without warnings/errors. Actual GUI click testing was limited by desktop capture availability; real GUI startup/update health and direct production ADB execution were checked separately.
+- Downloaded the actual final public ZIP, 102027781 bytes, and matched GitHub SHA-256: 24f7af36d50f5f84fd817764f9a41c76e959f07e6aed5caf7833b0b79f8808e1.
+- Local delivery: Games/SnailCommander/SnailCommander-v0.9.0/SnailCommander.exe and SnailCommander-v0.9.0.zip. Verified ProductVersion exactly 0.9.0+6bcc11690958d1ce97b8a7c83814909589dfdf8e.
+- Existing application copies, normal profile data and rollback ZIPs remain intact. Close older frontends before opening the new copy, or use the existing public updater.
