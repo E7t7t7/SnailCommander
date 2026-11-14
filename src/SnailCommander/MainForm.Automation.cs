@@ -16,6 +16,7 @@ public sealed partial class MainForm
     private CancellationTokenSource? _automationCancellation;
     private Task? _automationTask;
     private bool _automationPaused;
+    private bool _automationBootstrapping;
     private int _automationRevision;
     private bool AutomationActive => _automationTask is { IsCompleted: false };
 
@@ -72,9 +73,13 @@ public sealed partial class MainForm
     {
         string adb = _adbPath.Text.Trim();
         string serial = "";
+        _automationBootstrapping = true;
+        _liveTimer.Stop();
         try
         {
             AutomationStatus("Connecting to BlueStacks…");
+            await _captureGate.WaitAsync(ct);
+            _captureGate.Release(); // Drain any preview/reconnect that began before bootstrap was suspended.
             if (!File.Exists(adb)) adb = AdbService.DiscoverAdb() ?? throw new InvalidOperationException("ADB not found. Choose it in Settings.");
             string endpoint = _endpoint.Text.Trim();
             if (!Regex.IsMatch(endpoint, @"^127\.0\.0\.1:\d{1,5}$")) throw new InvalidOperationException("Choose a local BlueStacks endpoint in Settings.");
@@ -118,9 +123,12 @@ public sealed partial class MainForm
             await WaitAutomationAsync(ct);
             bool launch = await ForegroundPackageAsync(adb, serial, ct) != AutomationPolicy.GamePackage;
             await WaitAutomationAsync(ct);
+            if (_selectedDevice != serial) throw new InvalidOperationException("Device changed during startup.");
             if (launch)
                 await AdbService.RunCancelableAsync(adb, ct, "-s", serial, "shell", "monkey", "-p", AutomationPolicy.GamePackage, "-c", "android.intent.category.LAUNCHER", "1");
+            _automationBootstrapping = false;
             if (!_liveEnabled) await ToggleLiveAsync();
+            else _liveTimer.Start();
             var observer = new ObservationService(Path.Combine(AppPaths.DataDirectory, "Observations"), retryUnknownAtLargerScale: true);
             using var persistence = new AutomationPersistence(Path.Combine(AppPaths.DataDirectory, "Automation"), serial);
             var automationPort = new AdbAutomationPort(adb, serial, _captureGate,
@@ -135,8 +143,10 @@ public sealed partial class MainForm
         catch (Exception ex) { AutomationStatus(ex.Message); }
         finally
         {
+            _automationBootstrapping = false;
             if (!IsDisposed && !Disposing)
             {
+                if (_liveEnabled) _liveTimer.Start();
                 _startAutomation.Enabled = true;
                 _pauseAutomation.Enabled = _stopAutomation.Enabled = false;
                 _headerStop.Enabled = false;

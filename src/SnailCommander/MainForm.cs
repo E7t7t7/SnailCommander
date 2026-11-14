@@ -568,7 +568,7 @@ public sealed partial class MainForm : Form
     /// </summary>
     private async Task CaptureLiveFrameAsync()
     {
-        if (!_liveEnabled || IsDisposed || !IsHandleCreated) return;
+        if (!_liveEnabled || _automationBootstrapping || IsDisposed || !IsHandleCreated) return;
         if (!await _captureGate.WaitAsync(0)) return;
         try
         {

@@ -11,7 +11,7 @@ Baseline: 5c5930c7d19c9c35973b2faea87209ab74649e9c, verified 0.8.1. Development 
 - Failed login is not counted as success. Explicit persistent login error can schedule bounded recovery; unknown outcomes cannot. Cancellation, limits or exceptions during dispatch/verification preserve uncertainty and never replay the old input.
 - Added passive Home monitoring from three spatial task-board anchors, with ten-second checks. Sessions remain finite: ten minutes, 100 observations or twenty verified actions. Limits during verification require attention rather than reporting successful completion.
 - Added latest run result and durable retry state, retaining the existing last-action checkpoint. No automatic restart, queued gesture replay, quantity ingestion or seven-day scheduler was introduced.
-- Fixed startup readiness to wait for Android boot, since ADB can report connected before screenshot/game services are ready.
+- Fixed startup readiness to wait for Android boot, since ADB can report connected before screenshot/game services are ready. Preview is suspended during bootstrap so its reconnect logic cannot invalidate the selected device while Android starts; device binding is checked again before game launch.
 - Added bounded Retry button OCR and Home task-label font-width variants. A private local comparison found contrast thresholding degraded Home labels; raw colors were retained. One frame's variants are not independent confidence or neural training.
 
 ## Validation
