@@ -1,6 +1,6 @@
 # Architecture
 
-## Implemented boundaries (v0.8.1)
+## Implemented boundaries (v0.9.0)
 
 - **Windows shell** (`src/SnailCommander`): WinForms dark UI; live capture and archive; connection/preferences; Intelligence, Minion Command and Updates pages. Partial MainForm files separate feature presentation.
 - **ADB adapter** (`AdbService`): argument-list process execution, finite timeouts, binary PNG validation, 32 MB capture cap, cancelable screenshot operations and authorized-device parsing.
@@ -15,7 +15,7 @@
 - **Profile paths** (`AppPaths`): startup-only `--data-root` configuration; default locations remain compatible. Custom profiles isolate captures and state, stay outside the installation, and propagate through updater restart/rollback.
 - **Windows update process runner** (`tests/SnailCommander.UpdateIntegrationTests`): disposable installations, published real worker, fixture child processes and the real GUI; tests the OS process/file-lock/startup/rollback boundaries. `SnailCommander.UpdateProbe` is a test-only executable and is never packaged as the product.
 
-- **Automation policy** (`SnailCommander.Core/Automation`): explicit input allowlist, live-source/freshness/device/package/target checks and conservative postconditions. `MainForm.Automation` orchestrates cancelable bounded sessions, bootstrap, preflight, input, verification and local checkpointing. `AutomationButtonReader` performs focused OCR without adding crops to account state. See AUTOMATION.md.
+- **Automation policy** (`SnailCommander.Core/Automation`): explicit input allowlist, live-source/freshness/device/package/target checks and conservative postconditions. `AutomationRunner` owns finite execution, recovery cooldowns and verification through `IAutomationPort`. `AdbAutomationPort` supplies the shared production Windows/ADB adapter; `MainForm.Automation` supplies startup, pause/device state and UI presentation. `AutomationPersistence` excludes concurrent profile sessions, stores per-device retry reservations and writes the latest run result atomically. `AutomationButtonReader` performs focused OCR without adding crops to account state. See AUTOMATION.md.
 
 - **In-app game panel** (`MainForm.GamePanel`): a second bounded live picture view, manual tap/swipe/Back, source-age/device/foreground gates, capture/input serialization and cancellation handoff. `Core/Interaction/GameViewport` maps Zoom coordinates and rejects letterboxing. BlueStacks stays a separate process and may be minimized/restored through a uniquely selected native window; no cross-process reparenting is used.
 

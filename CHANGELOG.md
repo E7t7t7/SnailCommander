@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.9.0 - 2026-11-13
+
+- Extract the bounded observe/preflight/execute/verify loop into a platform-independent runner and a production ADB adapter that can be tested without desktop input.
+- Add explicit central login-error/Retry recognition, cooldown/reobservation, and a durable per-device limit of three recovery reservations per fifteen minutes. Unknown outcomes never authorize a retry. Keep failed login attempts separate from verified transitions.
+- Add passive recognized-Home monitoring with scheduled ten-second observations; cap each session at ten minutes, 100 observations or twenty verified actions. No facility collection, deployment or upgrade routines are added.
+- Persist the latest run result, reserve recovery budget before input, exclude concurrent sessions in one profile, and preserve uncertain/interrupted input states without automatic replay.
+- Wait for Android boot completion before game startup. Add measured local Home-label OCR variants while retaining native colors after contrast thresholding regressed recognition.
+- Add deterministic fake-environment execution/recovery tests plus opt-in real Windows OCR/storage and bounded live ADB harnesses.
+
 ## 0.8.1 - 2026-11-13
 
 - Add a full-height Game panel inside the GUI with local live mirroring, manual taps/drags, Android Back, and a minimize/restore BlueStacks button. BlueStacks can run minimized while the game is used inside Snail Commander.

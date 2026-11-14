@@ -1,38 +1,35 @@
 # Development status
 
-## Current session — 0.8.1 (2026-11-13)
+## Current session — 0.9.0 (2026-11-13 America/New_York)
 
-Baseline public/local main: 1287b6a2e11b1352d6e62b13b9efaaf7a41e69c0, following verified 0.8.0. The clean development checkout was preserved at Games/SnailCommander-Development during the requested release-folder cleanup. Normal application data is unchanged.
+Baseline: 5c5930c7d19c9c35973b2faea87209ab74649e9c, verified 0.8.1. Development remains in Games/SnailCommander-Development; release folders and normal user profiles are separate.
 
-## Implemented
+## Completed
 
-- Added Game navigation and a header Game panel button. The full-height panel contains the game image and manual control, Android Back and minimize/show BlueStacks controls.
-- Local screenshot mirroring targets a 500 ms cadence while Game is visible, sharing the existing nonqueuing capture gate and independent OCR cadence. Portrait/landscape frames remain aspect-correct. Images are disposed on replacement.
-- User-directed taps and release-time swipes map through pure Zoom/letterbox geometry. Black borders, stale frames, changed device/orientation and a non-Super-Snail foreground package reject input. A second input waits for a new post-input frame; there are no queued gestures or blind retries.
-- Enabling manual control stops/drains automation. Starting automation or installing an update cancels/drains manual input. Switching away disables it. Closing cancels input and restores a BlueStacks window minimized by this app.
-- Minimize/show works only with one identifiable player window; multiple windows require manual selection/minimization. The emulator keeps running. Process identity is checked before restoration.
-- Preserved existing observation/account evidence, advisory optimizer, bounded automation, updater and profile behavior.
+- Extracted the real automation loop into Core/AutomationRunner and IAutomationPort, with deterministic simulated environments. Shared AdbAutomationPort is used by both GUI and opt-in live integration, including foreground/source rechecks and capture/input serialization.
+- Added strict central login-error/Retry recognition, cooldown and reobservation. A per-device ledger reserves at most three recovery attempts per fifteen minutes before dispatch and survives restart. Malformed/oversized state fails closed; an exclusive profile lease prevents concurrent writers/sessions.
+- Failed login is not counted as success. Explicit persistent login error can schedule bounded recovery; unknown outcomes cannot. Cancellation, limits or exceptions during dispatch/verification preserve uncertainty and never replay the old input.
+- Added passive Home monitoring from three spatial task-board anchors, with ten-second checks. Sessions remain finite: ten minutes, 100 observations or twenty verified actions. Limits during verification require attention rather than reporting successful completion.
+- Added latest run result and durable retry state, retaining the existing last-action checkpoint. No automatic restart, queued gesture replay, quantity ingestion or seven-day scheduler was introduced.
+- Fixed startup readiness to wait for Android boot, since ADB can report connected before screenshot/game services are ready.
+- Added bounded Retry button OCR and Home task-label font-width variants. A private local comparison found contrast thresholding degraded Home labels; raw colors were retained. One frame's variants are not independent confidence or neural training.
 
-## Verification
+## Validation
 
-- 230 deterministic assertions passed, including 18 new viewport checks for portrait/landscape borders, resize scaling, exact bounds, invalid dimensions and nonfinite coordinates.
-- App builds passed with no warnings/errors. App/updater version is 0.8.1.
-- Live GUI test used only the disposable game-panel-ui profile. The in-app game image continued updating while BlueStacks was minimized. Leaving/reopening Game disabled manual control, and closing restored the minimized BlueStacks window.
-- One tap in the mirrored game image opened the real game's Settings screen. A drag was forwarded; a tap on its return arrow returned to the home screen. No game settings, purchases, upgrades or resource actions were requested during this test. Live interaction is a small manual smoke test, not an unattended gameplay benchmark.
-- Local real updater-process tests passed all 84 assertions and profile checks passed all 12. Final CI passed the same gates plus 230 deterministic checks (326 assertions total).
+- 264 deterministic assertions passed, including 34 new recovery/runner checks: exhausted/persisted budgets, cooldown reobservation, central-vs-chat Retry, wrong source/device/package, pause revision, storage failure, unknown outcomes, cancellation and interrupted verification limits.
+- 8 local Windows OCR/persistence assertions passed using an explicitly rendered synthetic error dialog. Verified central Retry recognition in policy simulation, exclusion of synthetic inputs from production, persistence across reopen, single writer and corrupt-ledger rejection. No game input is sent by this fixture.
+- First live attempt correctly stopped on an offline emulator with zero inputs. After bounded Android readiness, the production adapter verified a real update-notice dismissal and sent one login tap; the 45-second harness cancellation recorded that last input as unverified. It was not replayed on the next run.
+- A subsequent live run sent zero inputs on an unsupported screen. Local inspection showed the game was Home and exposed the condensed-font OCR gap. After the measured crop changes, a live session recognized Home in three observations, monitored it and sent zero inputs. This is a small live sample, not an accuracy or unattended-duration benchmark.
+- Actual login-error recovery has deterministic and real-OCR synthetic coverage; a successful real network-error recovery was not observed. No network fault was intentionally induced.
+- Desktop capture was unavailable during GUI click testing. The isolated GUI built and started; existing real GUI installation/profile checks remain required release gates. Production ADB checks are reported separately from GUI click testing.
+- Private screenshots/OCR, temporary benchmark code and all profiles are under ignored artifacts. No private account/chat content is part of publishing.
 
-## Limits
+## Remaining work
 
-This is interactive screenshot mirroring and ADB input forwarding, not native cross-process window embedding or video streaming. Target cadence is about two frames per second and depends on ADB/emulator latency. No keyboard/text, audio, multi-touch, long-press or continuous drag feedback is implemented. It requires BlueStacks with ADB enabled and Super Snail foreground for input. A missing connection is still handled from Home/Settings.
+Most gameplay remains unfinished: verified facility/resource collection, inventory ingestion with own-account identity, deployment, cloning/upgrading execution, comprehensive equipment/form/relic/partner/event planning, general disconnect recovery and seven-day scheduling/soak tests. Home monitoring intentionally does not click Done tiles. Next: establish a labeled own-account facility transition corpus and implement one free collection routine with source-specific expected outcomes. Maintain separate Leadership/Minion MAX and ready/deployed/healing quantities before deployment.
 
-The 0.8.0 bounded automation remains narrow: login Start, free reward OK and explicit update notice dismissal only. Most gameplay, login-error recovery, inventory ingestion, strategic scheduling and seven-day unattended operation remain unfinished. Manual control is separate from these policy rules and follows the user's gestures. OCR/evidence/optimizer limits still apply; persistence is not neural training.
+The in-app game view remains screenshot mirroring at roughly two frames per second, with manual tap/swipe/Android Back and minimize/show BlueStacks. Keyboard/audio/multi-touch are unfinished. Existing account-evidence, optimizer and updater limitations remain documented in their subsystem files.
 
 ## Release delivery
 
-- Published code commit: 8ffeb233884856d559a2168f9b2aa982db3c9a53.
-- Public release: [v0.8.1](https://github.com/E7t7t7/SnailCommander/releases/tag/build-8ffeb233884856d559a2168f9b2aa982db3c9a53).
-- [CI 43518009220](https://github.com/E7t7t7/SnailCommander/actions/runs/43518009220): build and publish-release both succeeded, with 326 assertions passing before packaging.
-- Downloaded the actual public ZIP, 102011481 bytes; SHA-256 matches GitHub: b6c405eccb0cc81954f44f413c800e778a6b96ac2ddcde3c99fa0e5a1c2f3654.
-- Local delivery: Games/SnailCommander/SnailCommander-v0.8.1/SnailCommander.exe, with SnailCommander-v0.8.1.zip beside it. Verified ProductVersion exactly 0.8.1+8ffeb233884856d559a2168f9b2aa982db3c9a53.
-- The normal 0.8.0 app was still open at delivery, so its installation and existing rollback ZIPs were preserved. Close the old copy before opening the new one to avoid duplicate frontends. Development files stay outside the release folder; the old empty source placeholder remains locked by a process.
-- Use Game (or Game panel in the header), Enable manual control for taps/drags, and Minimize / show BlueStacks to use only the commander window. Automation may be watched in Game without enabling manual control.
+Local app/updater builds passed without warnings/errors. All 84 real updater-process assertions and 12 profile-path assertions passed. Public release verification pending. Existing versions and rollback ZIPs remain intact.

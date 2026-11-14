@@ -38,6 +38,24 @@ internal static class AutomationButtonReader
                 && Math.Abs(old.X - (e.X + region.X)) < 10 && Math.Abs(old.Y - (e.Y + region.Y)) < 10))
                 .Select(e => e with { X = e.X + region.X, Y = e.Y + region.Y }));
         }
+        // The Home board uses a condensed font. Horizontal enlargement aids OCR; native colors are retained after a measured contrast-threshold regression.
+        // all resulting boxes map back to original pixels and remain outside account persistence.
+        var boardRegion = new Rectangle(bitmap.Width / 40, bitmap.Height * 16 / 100, bitmap.Width * 22 / 100, bitmap.Height * 21 / 100);
+        foreach (double stretch in new[] { 1.5, 2d })
+        {
+            using var board = bitmap.Clone(boardRegion, PixelFormat.Format32bppArgb);
+            using var wide = new Bitmap((int)Math.Round(board.Width * stretch), board.Height);
+            using (var graphics = Graphics.FromImage(wide))
+            {
+                graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                graphics.DrawImage(board, 0, 0, wide.Width, wide.Height);
+            }
+            using var bytes = new MemoryStream(); wide.Save(bytes, ImageFormat.Png);
+            var read = await ObservationService.RecognizeAsync(bytes.ToArray(), wide.Width, wide.Height, 4, ct);
+            double xScale = (double)wide.Width / board.Width;
+            evidenceText += "\n" + read.Text;
+            elements.AddRange(read.Elements.Select(e => e with { X = boardRegion.X + e.X / xScale, Y = boardRegion.Y + e.Y, Width = e.Width / xScale }));
+        }
         // No synthetic crop is persisted as a live account observation.
         foreach (var box in Candidates(bitmap).Take(5))
         {
@@ -53,7 +71,7 @@ internal static class AutomationButtonReader
             crop.Save(bytes, ImageFormat.Png);
             var recognized = await ObservationService.RecognizeAsync(bytes.ToArray(), crop.Width, crop.Height, 4, ct);
             string text = recognized.Text.Trim();
-            if (text.Equals("OK", StringComparison.OrdinalIgnoreCase) || text.Equals("Start", StringComparison.OrdinalIgnoreCase))
+            if (text.Equals("OK", StringComparison.OrdinalIgnoreCase) || text.Equals("Start", StringComparison.OrdinalIgnoreCase) || text.Equals("Retry", StringComparison.OrdinalIgnoreCase))
             {
                 // Prefer a single region from the real button crop over duplicate whole-frame words.
                 elements.RemoveAll(e => e.Text.Equals(text, StringComparison.OrdinalIgnoreCase)

@@ -14,6 +14,8 @@ string? Value(string key)
 try
 {
     string output = Path.GetFullPath(Value("--output") ?? Path.Combine(AppContext.BaseDirectory, "integration-output"));
+    if (args.Contains("--live-automation")) return await LiveAutomationTests.RunAsync(Value("--adb") ?? throw new ArgumentException("--adb required"), Value("--device") ?? throw new ArgumentException("--device required"), output);
+    if (args.Contains("--check-recovery")) return await RecoveryIntegrationTests.RunAsync(output);
     if (args.Contains("--check-profiles")) return ProfilePathTests.Run(output);
     if (args.Contains("--check-account-ocr")) return await AccountOcrTests.RunAsync(output);
     Directory.CreateDirectory(output);
@@ -48,6 +50,8 @@ try
         using var bitmap = new System.Drawing.Bitmap(memory);
         var plan = SnailCommander.Core.Automation.AutomationPolicy.Plan(recognized,
             SnailCommander.Core.Automation.AutomationPolicy.GamePackage, device, DateTimeOffset.UtcNow);
+        bool home = SnailCommander.Core.Automation.AutomationPolicy.IsLiveHome(recognized, SnailCommander.Core.Automation.AutomationPolicy.GamePackage, device, DateTimeOffset.UtcNow);
+        Console.WriteLine($"Home signature: {home}");
         Console.WriteLine($"Automation recognition only (no input): {AutomationButtonReader.Candidates(bitmap).Count} button candidates; action {plan?.Action.ToString() ?? "none"}; {recognized.Elements.Count} regions.");
         await File.WriteAllTextAsync(Path.Combine(output, "automation-recognition.json"), JsonSerializer.Serialize(new { observation.Id, plan, recognized.Elements }));
         return 0;

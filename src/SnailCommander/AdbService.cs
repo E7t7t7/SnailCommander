@@ -101,6 +101,31 @@ internal static class AdbService
         }
     }
 
+    internal static async Task<bool> WaitForAndroidBootAsync(string adb, string device, CancellationToken ct)
+    {
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        deadline.CancelAfter(TimeSpan.FromSeconds(45));
+        try
+        {
+            for (int attempt = 0; attempt < 20; attempt++)
+            {
+                try
+                {
+                    if ((await RunCancelableAsync(adb, deadline.Token, "-s", device, "shell", "getprop", "sys.boot_completed")).Trim() == "1") return true;
+                }
+                catch (InvalidOperationException) { }
+                await Task.Delay(2000, deadline.Token);
+            }
+            return false;
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return false; }
+    }
+    internal static async Task<string> GetForegroundPackageAsync(string adb, string device, CancellationToken ct)
+    {
+        var output = await RunCancelableAsync(adb, ct, "-s", device, "shell", "dumpsys", "window", "windows");
+        var focus = System.Text.RegularExpressions.Regex.Match(output, @"mCurrentFocus=.*?\s([a-zA-Z0-9_.]+)/");
+        return focus.Success ? focus.Groups[1].Value : "";
+    }
     internal static Task<string> RunTextAsync(string adb, params string[] arguments) => RunCancelableAsync(adb, CancellationToken.None, arguments);
 
     internal static async Task<string> RunCancelableAsync(string adb, CancellationToken ct, params string[] arguments)

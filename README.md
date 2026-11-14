@@ -1,6 +1,6 @@
 # Snail Commander
 
-Local Windows command center for Super Snail in BlueStacks. **v0.8.1 adds an interactive Game panel inside the GUI.** It includes local OCR, account evidence, troop planning, isolated profiles and process-tested public updating.
+Local Windows command center for Super Snail in BlueStacks. **v0.9.0 adds bounded login recovery and recognized-Home monitoring, alongside the interactive Game panel.** It includes local OCR, account evidence, troop planning, isolated profiles and process-tested public updating.
 
 [Download the latest Windows release](https://github.com/E7t7t7/SnailCommander/releases/latest)
 
@@ -10,7 +10,7 @@ Local Windows command center for Super Snail in BlueStacks. **v0.8.1 adds an int
 2. On **Home**, press **Start automation**. It connects to the configured BlueStacks instance, starts it when its local configuration can be matched, and opens Super Snail. ADB must be enabled in BlueStacks. Adjust unusual installations under **Settings**.
 3. Open **Game** (or **Game panel** in the header), enable manual control, and click/drag directly in the live game image. **Minimize / show BlueStacks** keeps the emulator out of the way. It continues running in the background. The view refreshes at roughly two frames per second, not video frame rates. Manual control stops automation; switching away disables manual input.
 4. Use **Pause/Resume** to suspend new actions or **Stop** to cancel. Stop is also available in the header on every page.
-5. This first automation release handles recognized login Start, free reward OK, and update notices. It rechecks the screen before input and verifies the result. Unknown screens or unverified outcomes end with **Needs attention**, without repeating the tap. Continue manually and press Start again.
+5. Automation handles recognized login Start, certain free reward OK dialogs, update notices, and explicit login-error Retry dialogs. Recovery is limited to three attempts per fifteen minutes with cooldown and fresh recognition. On recognized Home screens it checks for supported dialogs every ten seconds. Sessions stop after ten minutes, 100 observations, twenty verified actions, or an unsupported/unverified outcome. Recovery limits survive restarting the app; unfinished inputs are never replayed.
 6. **Advanced** retains Account evidence, Intelligence/OCR, Minion Command, captures and preview controls. Troop optimization remains advisory and uses your local account JSON. Synthetic examples are demonstration data.
 7. **Updates** checks public releases and installs verified packages with external replacement and rollback. No token or subscription is required.
 

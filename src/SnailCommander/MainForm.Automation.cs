@@ -25,7 +25,7 @@ public sealed partial class MainForm
         panel.Controls.Add(_startAutomation, 0, 1);
         panel.Controls.Add(TwoButtons(_pauseAutomation, _stopAutomation), 0, 2);
         panel.Controls.Add(_automationStatus, 0, 3);
-        var capabilities = Theme.TextLabel("Open Game to play inside this window; BlueStacks can stay minimized. Automation handles recognized Start, free reward OK, and update notices.\n\nOther gameplay needs your attention. No spending, upgrading, or cloning routines yet.\n\nPause stops new actions. Stop cancels the run. Use Advanced for OCR, account evidence, and troop planning.", 10, color: Theme.Secondary);
+        var capabilities = Theme.TextLabel("Open Game to play inside this window; BlueStacks can stay minimized. Automation handles login recovery, recognized Start, free reward OK, update notices, and bounded Home monitoring.\n\nOther gameplay needs your attention. No spending, upgrading, or cloning routines yet.\n\nPause stops new actions. Stop cancels the run. Use Advanced for OCR, account evidence, and troop planning.", 10, color: Theme.Secondary);
         capabilities.TextAlign = ContentAlignment.TopLeft;
         panel.Controls.Add(capabilities, 0, 4);
         _startAutomation.Click += async (_, _) =>
@@ -110,6 +110,9 @@ public sealed partial class MainForm
             await RefreshDevicesCoreAsync();
             if (_selectedDevice != serial) throw new InvalidOperationException("Device changed during startup.");
             await WaitAutomationAsync(ct);
+            AutomationStatus("Waiting for Android startup…");
+            if (!await AdbService.WaitForAndroidBootAsync(adb, serial, ct)) throw new TimeoutException("Android startup did not finish within its deadline.");
+            await WaitAutomationAsync(ct);
             var installed = await AdbService.RunCancelableAsync(adb, ct, "-s", serial, "shell", "pm", "path", AutomationPolicy.GamePackage);
             if (!installed.Contains("package:")) throw new InvalidOperationException("Super Snail is not installed in this instance.");
             await WaitAutomationAsync(ct);
@@ -119,52 +122,14 @@ public sealed partial class MainForm
                 await AdbService.RunCancelableAsync(adb, ct, "-s", serial, "shell", "monkey", "-p", AutomationPolicy.GamePackage, "-c", "android.intent.category.LAUNCHER", "1");
             if (!_liveEnabled) await ToggleLiveAsync();
             var observer = new ObservationService(Path.Combine(AppPaths.DataDirectory, "Observations"), retryUnknownAtLargerScale: true);
-            int completed = 0;
-            int unknownObservations = 0;
-            while (completed < 20)
-            {
-                await WaitAutomationAsync(ct);
-                if (_selectedDevice != serial) throw new InvalidOperationException("Selected device changed; run stopped.");
-                AutomationStatus("Observing Super Snail…");
-                var before = await ReadAutomationFrameAsync(observer, adb, serial, ct);
-                string package = await ForegroundPackageAsync(adb, serial, ct);
-                var plan = AutomationPolicy.Plan(before, package, serial, DateTimeOffset.UtcNow);
-                if (plan is null)
-                {
-                    if (++unknownObservations >= 12)
-                        throw new InvalidOperationException("Needs attention: no supported action on this screen. Continue in the game, then press Start again.");
-                    AutomationStatus($"Waiting for a supported screen • {completed} verified actions");
-                    await Task.Delay(5000, ct);
-                    continue;
-                }
-                await WaitAutomationAsync(ct);
-                int revision = _automationRevision;
-                var fresh = await ReadAutomationFrameAsync(observer, adb, serial, ct);
-                var current = AutomationPolicy.Plan(fresh, await ForegroundPackageAsync(adb, serial, ct), serial, DateTimeOffset.UtcNow);
-                if (current is null || current.Action != plan.Action) continue;
-                await WaitAutomationAsync(ct);
-                if (_selectedDevice != serial || revision != _automationRevision || DateTimeOffset.UtcNow - fresh.CapturedAt > TimeSpan.FromSeconds(30)) continue;
-                JournalAutomation("intent", fresh, current);
-                ct.ThrowIfCancellationRequested();
-                // No await between the pause/device gate and dispatch. All UI state is owned by this UI thread.
-                if (_automationPaused) continue;
-                await AdbService.RunCancelableAsync(adb, ct, "-s", serial, "shell", "input", "tap", current.X.ToString(System.Globalization.CultureInfo.InvariantCulture), current.Y.ToString(System.Globalization.CultureInfo.InvariantCulture));
-                JournalAutomation("sent", fresh, current);
-                AutomationStatus("Verifying " + current.Action + "…");
-                bool verified = false;
-                for (int attempt = 0; attempt < 3; attempt++)
-                {
-                    await Task.Delay(3000, ct);
-                    var after = await ReadAutomationFrameAsync(observer, adb, serial, ct);
-                    if (AutomationPolicy.Verified(current, fresh, after, await ForegroundPackageAsync(adb, serial, ct))) { verified = true; break; }
-                }
-                JournalAutomation(verified ? "verified" : "unverified-no-retry", fresh, current);
-                if (!verified) throw new InvalidOperationException("Needs attention: action outcome could not be verified. No retry was sent.");
-                completed++;
-                unknownObservations = 0;
-                AutomationStatus($"Verified {current.Action} • {completed} completed");
-            }
-            AutomationStatus("Session limit reached • 20 verified actions");
+            using var persistence = new AutomationPersistence(Path.Combine(AppPaths.DataDirectory, "Automation"), serial);
+            var automationPort = new AdbAutomationPort(adb, serial, _captureGate,
+                token => ReadAutomationFrameAsync(observer, adb, serial, token), WaitAutomationAsync,
+                () => _selectedDevice, () => _automationRevision, () => _automationPaused, AutomationStatus,
+                (stage, frame, action) => { if (stage == "intent") persistence.SaveBudget(); JournalAutomation(stage, frame, action); });
+            var result = await new AutomationRunner(automationPort, serial, persistence.Budget).RunAsync(ct);
+            persistence.WriteRun(result);
+            AutomationStatus($"{result.Reason} • {result.VerifiedActions} verified, {result.Inputs} input attempts");
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { AutomationStatus("Stopped"); }
         catch (Exception ex) { AutomationStatus(ex.Message); }
@@ -186,12 +151,7 @@ public sealed partial class MainForm
         while (_automationPaused) await Task.Delay(150, ct);
     }
 
-    private static async Task<string> ForegroundPackageAsync(string adb, string serial, CancellationToken ct)
-    {
-        var output = await AdbService.RunCancelableAsync(adb, ct, "-s", serial, "shell", "dumpsys", "window", "windows");
-        var focus = Regex.Match(output, @"mCurrentFocus=.*?\s([a-zA-Z0-9_.]+)/");
-        return focus.Success ? focus.Groups[1].Value : "";
-    }
+    private static Task<string> ForegroundPackageAsync(string adb, string serial, CancellationToken ct) => AdbService.GetForegroundPackageAsync(adb, serial, ct);
 
     private async Task<ScreenObservation> ReadAutomationFrameAsync(ObservationService observer, string adb, string serial, CancellationToken ct)
     {
