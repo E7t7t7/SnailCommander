@@ -16,7 +16,7 @@ Baseline: 5c5930c7d19c9c35973b2faea87209ab74649e9c, verified 0.8.1. Development 
 
 ## Validation
 
-- 264 deterministic assertions passed, including 34 new recovery/runner checks: exhausted/persisted budgets, cooldown reobservation, central-vs-chat Retry, wrong source/device/package, pause revision, storage failure, unknown outcomes, cancellation and interrupted verification limits.
+- 265 deterministic assertions passed, including 35 new recovery/runner checks: exhausted/persisted budgets, cooldown reobservation, central-vs-chat Retry, wrong source/device/package, pause revision, storage failure, unknown outcomes, cancellation and interrupted verification limits.
 - 8 local Windows OCR/persistence assertions passed using an explicitly rendered synthetic error dialog. Verified central Retry recognition in policy simulation, exclusion of synthetic inputs from production, persistence across reopen, single writer and corrupt-ledger rejection. No game input is sent by this fixture.
 - First live attempt correctly stopped on an offline emulator with zero inputs. After bounded Android readiness, the production adapter verified a real update-notice dismissal and sent one login tap; the 45-second harness cancellation recorded that last input as unverified. It was not replayed on the next run.
 - A subsequent live run sent zero inputs on an unsupported screen. Local inspection showed the game was Home and exposed the condensed-font OCR gap. After the measured crop changes, a live session recognized Home in three observations, monitored it and sent zero inputs. This is a small live sample, not an accuracy or unattended-duration benchmark.

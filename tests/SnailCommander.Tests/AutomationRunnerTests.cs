@@ -36,6 +36,8 @@ internal static class AutomationRunnerTests
         assert(!AutomationPolicy.IsLiveHome(Frame("home", now, 1) with { Origin = ObservationOrigin.Synthetic }, AutomationPolicy.GamePackage, Device, now), "synthetic board excluded");
         assert(!AutomationPolicy.IsLiveHome(Frame("home", now, 1) with { Text = "Rewards Gained" }, AutomationPolicy.GamePackage, Device, now), "reward modal over home excluded");
         assert(!AutomationPolicy.Verified(new(SafeAction.Login, 270, 722), Frame("login", now, 1), retry with { CapturedAt = now.AddSeconds(1) }, AutomationPolicy.GamePackage), "explicit login failure never verifies login");
+        var noticeAfterRetry = retry with { Text = "Maintenance Tap anywhere to close notice", CapturedAt = now.AddSeconds(1), Fingerprint = "new-notice", Elements = new[] { new TextElement("Tap", 60, 850, 40, 30) } };
+        assert(AutomationPolicy.Verified(new(SafeAction.RetryLogin, 270, 622), retry, noticeAfterRetry, AutomationPolicy.GamePackage), "retry to explicit notice verifies independently of generic screen classification");
         var budget = new RecoveryBudget();
         assert(budget.Reserve(now) && budget.Reserve(now) && budget.Reserve(now) && !budget.Reserve(now), "three attempts maximum");
         var restored = JsonSerializer.Deserialize<RecoveryBudget>(JsonSerializer.Serialize(budget))!;

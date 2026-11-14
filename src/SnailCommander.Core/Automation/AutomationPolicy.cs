@@ -53,8 +53,9 @@ public static class AutomationPolicy
         var next = Plan(after, package, before.Device, after.CapturedAt);
         if (action.Action == SafeAction.RetryLogin && !home && next?.Action is not (SafeAction.Login or SafeAction.Notice)) return false;
         // Unknown pixels and a successful ADB command are not proof of completion.
-        if (!home && after.Classification.Kind == ScreenKind.Unknown
-            && !(action.Action is SafeAction.Notice or SafeAction.RetryLogin && Plan(after, package, before.Device, after.CapturedAt)?.Action == SafeAction.Login)) return false;
+        bool knownTransition = action.Action == SafeAction.Notice && next?.Action == SafeAction.Login
+            || action.Action == SafeAction.RetryLogin && next?.Action is SafeAction.Login or SafeAction.Notice;
+        if (!home && after.Classification.Kind == ScreenKind.Unknown && !knownTransition) return false;
         string text = after.Text.ToLowerInvariant();
         bool remains = action.Action switch
         {
